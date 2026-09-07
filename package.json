@@ -1,0 +1,41 @@
+{
+  "name": "rdl-intelligence-hub",
+  "version": "1.0.0",
+  "description": "RDL Intelligence Hub - Plataforma Corporativa Interconectada (Astro + Neutralino.js + Inno Setup)",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "node server/server.js",
+    "build": "astro build",
+    "seed": "node server/scripts/seed-mock-data.js",
+    "preview": "astro preview",
+    "neu:start": "neu run",
+    "neu:build": "neu build"
+  },
+  "keywords": [
+    "rdl-intelligence-hub",
+    "astro",
+    "neutralino",
+    "socket.io",
+    "sqlite3",
+    "floating-ui",
+    "inno-setup"
+  ],
+  "author": "RDL Reclutamiento e Integración de Talento",
+  "license": "MIT",
+  "dependencies": {
+    "@astrojs/node": "^8.3.0",
+    "@floating-ui/dom": "^1.6.10",
+    "astro": "^4.15.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^4.22.2",
+    "gsap": "^3.12.5",
+    "jsonwebtoken": "^9.0.3",
+    "resend": "^6.26.0",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
+    "sqlite3": "^5.1.7"
+  }
+}

@@ -1,0 +1,697 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SplashScreen from '../components/SplashScreen.astro';
+import Header from '../components/Header.astro';
+---
+
+<Layout title="RDL Intelligence Hub - Plataforma Corporativa">
+	<!-- 1. Pantalla Splash Flotante -->
+	<SplashScreen />
+
+	<!-- 2. Modal de Login / Selección de Perfil Corporativo -->
+	<div id="login-modal" class="modal-overlay active">
+        <div class="modal-card glass-card login-card" style="max-width: 680px;">
+            <div class="login-header">
+                <img src="/Logo RDL.png" alt="RDL Logo" class="login-brand-logo" onerror="this.onerror=null; this.src='Logo RDL.png';">
+                <h2>RDL Intelligence Hub</h2>
+                <p>Plataforma Corporativa de Talento, Metas Ponderadas e Incidencias en Tiempo Real</p>
+            </div>
+
+            <div class="login-tabs">
+                <button class="login-tab-btn active" id="tab-btn-profiles" onclick="loginMod.switchTab('profiles')">
+                    👥 Perfiles de Colaboradoras
+                </button>
+                <button class="login-tab-btn" id="tab-btn-email" onclick="loginMod.switchTab('email')">
+                    ✉️ Ingreso por Correo
+                </button>
+            </div>
+
+            <!-- Vista 1: Selector de Tarjetas de Perfil -->
+            <div id="login-profiles-view">
+                <div class="role-selector-grid" id="roles-container">
+                    <!-- Se puebla dinámicamente desde /api/usuarios -->
+                </div>
+
+                <div style="margin-top: 20px; text-align: center;">
+                    <button class="btn btn-secondary btn-full" onclick="document.getElementById('modal-create-user').classList.add('active')">
+                        ➕ Crear Nuevo Perfil / Registrar Colaboradora
+                    </button>
+                </div>
+            </div>
+
+            <!-- Vista 2: Ingreso Directo por Correo -->
+            <div id="login-email-view" class="hidden" style="margin-top: 20px;">
+                <form id="form-login-email" onsubmit="loginMod.handleEmailLogin(event)">
+                    <div class="form-group" style="text-align: left;">
+                        <label>Correo Electrónico Corporativo</label>
+                        <input type="email" id="login-input-email" placeholder="ejemplo: sofia.ramirez@rdl.com.mx" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-full" style="margin-top: 10px;">
+                        Ingresar a la Plataforma RDL
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Crear Nuevo Perfil de Usuario -->
+    <div class="modal-overlay" id="modal-create-user">
+        <div class="modal-card glass-card" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>➕ Registrar Nuevo Perfil RDL</h2>
+                <button class="btn-close" onclick="document.getElementById('modal-create-user').classList.remove('active')">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-create-user">
+                    <div class="form-group">
+                        <label>Nombre Completo</label>
+                        <input type="text" id="nu-nombre" placeholder="Ej: Lic. Claudia Ruiz" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Rol en la Plataforma</label>
+                            <option value="RH">Recursos Humanos (RH - Gestión Total, Fichas Buk, Metas y Aprobaciones)</option>
+                            <option value="ADMIN">Administrador (Gestión Total de Metas, Aprobaciones y Red)</option>
+                            <option value="ABOGADA_SR">Abogada SR (Gestión de Metas, Publicación en Muro y Aprobaciones)</option>
+                            <option value="ABOGADA_JR">Abogada JR (Ficha, Metas Ponderadas, Vacaciones y Muro Lectura)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Puesto / Cargo Corporativo</label>
+                        <input type="text" id="nu-puesto" placeholder="Ej: Abogada Litigante SR" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Correo Electrónico Corporativo</label>
+                        <input type="email" id="nu-email" placeholder="Ej: claudia.ruiz@rdl.com.mx" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Días Totales de Vacaciones Asignados</label>
+                        <input type="number" id="nu-vacaciones" value="12" min="1" max="30" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-full" style="margin-top: 15px;">
+                        Registrar Perfil e Ingresar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+	<!-- 3. Workspace Principal -->
+	<div class="app-layout hidden" id="main-app-layout">
+		<Header />
+
+		<div class="rdl-workspace">
+			<!-- Panel Izquierdo: Ficha del Empleado & Metas Ponderadas -->
+			<aside class="left-panel">
+				<div class="glass-card employee-card floating-element">
+					<div class="card-tag">Ficha de Colaborador</div>
+					<div class="employee-avatar-wrapper">
+						<div class="employee-avatar" id="emp-avatar">AM</div>
+						<div class="green-online-badge"></div>
+					</div>
+					
+					<h2 class="employee-name" id="emp-name">Lic. Ana Martinez</h2>
+					<span class="employee-puesto" id="emp-puesto">Abogada Junior de Litigio</span>
+					<span class="employee-dept" id="emp-dept">Departamento Legal RDL</span>
+
+					<div class="divider"></div>
+
+					<!-- Saldo de Vacaciones -->
+					<div class="vacations-box floating-element">
+						<div class="vacations-header">
+							<span>Saldo de Vacaciones</span>
+							<button class="btn-link" onclick="vacacionesMod.openModal()">Solicitar</button>
+						</div>
+						<div class="vacations-gauge-container">
+							<div class="vacation-circle">
+								<span class="vacation-days-number" id="emp-vacations-remaining">10</span>
+								<span class="vacation-days-label">Días Libres</span>
+							</div>
+						</div>
+						<div class="vacations-stats">
+							<div class="vstat">
+								<span class="vstat-num" id="emp-vacations-total">12</span>
+								<span class="vstat-lbl">Totales</span>
+							</div>
+							<div class="vstat">
+								<span class="vstat-num" id="emp-vacations-taken">2</span>
+								<span class="vstat-lbl">Tomados</span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Módulo de Metas Ponderadas (100%) -->
+				<div class="glass-card metas-card floating-element">
+					<div class="metas-header">
+						<div>
+                            <h3 style="font-size: 1.05rem; font-weight: 700;">Metas & KPIs Ponderados</h3>
+                            <span style="font-size: 0.72rem; color: var(--text-dim);">Ponderación Total: 100%</span>
+                        </div>
+						<div style="display: flex; gap: 8px; align-items: center;">
+                            <span class="metas-badge" id="metas-count-badge">0 Metas</span>
+                            <button id="btn-admin-manage-metas" class="btn btn-ghost btn-sm hidden" onclick="metasMod.openAdminModal()" title="Administrar Metas del Equipo">
+                                ⚙️ Gestionar
+                            </button>
+                        </div>
+					</div>
+
+                    <!-- Resumen de Calificación Ponderada Global -->
+                    <div class="metas-summary-box">
+                        <div class="summary-score-wrapper">
+                            <div class="score-radial">
+                                <span class="score-number" id="emp-weighted-score">0%</span>
+                                <span class="score-label">Desempeño Global</span>
+                            </div>
+                            <div class="score-details">
+                                <div class="weight-balance-row">
+                                    <span>Suma de Pesos:</span>
+                                    <strong id="emp-total-weights">0% / 100%</strong>
+                                </div>
+                                <div class="weight-balance-bar-bg">
+                                    <div class="weight-balance-bar-fill" id="weight-balance-bar"></div>
+                                </div>
+                                <span class="weight-status-text" id="weight-status-msg">Verificando ponderación...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lista Dinámica de Metas -->
+					<div class="metas-list" id="metas-list-container"></div>
+				</div>
+			</aside>
+
+			<!-- Panel Central: Muro estilo Facebook -->
+			<main class="center-panel">
+				<div class="glass-card post-composer floating-element" id="post-composer-card">
+					<div class="composer-header">
+						<div class="user-avatar-sm" id="composer-user-avatar">SR</div>
+						<span class="composer-prompt">¿Qué deseas publicar hoy para el equipo de RDL?</span>
+					</div>
+					
+					<form id="form-create-post">
+						<div class="form-group">
+							<input type="text" id="post-titulo" placeholder="Título del anuncio o aviso corporativo..." required>
+						</div>
+						<div class="form-group">
+							<textarea id="post-contenido" rows="3" placeholder="Escribe el mensaje o comunicado oficial..." required></textarea>
+						</div>
+						
+						<div class="composer-actions">
+							<select id="post-categoria" class="select-sm">
+								<option value="Corporativo">📢 Corporativo</option>
+								<option value="Aviso Legal">⚖️ Aviso Legal</option>
+								<option value="Integracion">🎉 Integración</option>
+								<option value="Urgente">🚨 Urgente</option>
+							</select>
+
+							<button type="submit" class="btn btn-primary">
+								Publicar en el Muro RDL
+							</button>
+						</div>
+					</form>
+				</div>
+
+				<!-- Aviso para Abogada JR -->
+				<div class="glass-card jr-notice-card hidden" id="jr-notice-card">
+					<div class="notice-content">
+						<span>ℹ️</span>
+						<p><strong>Muro de Comunicación General RDL:</strong> Como Abogada JR puedes leer, dar Me Gusta y comentar las publicaciones oficiales.</p>
+					</div>
+				</div>
+
+				<!-- Feed de Publicaciones -->
+				<div class="feed-stream" id="feed-stream-container"></div>
+			</main>
+		</div>
+	</div>
+
+    <!-- Modal de Gestión de Metas para Administrador -->
+    <div class="modal-overlay" id="modal-gestionar-metas">
+        <div class="modal-card glass-card" style="max-width: 780px; max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <h2>🎯 Gestión y Asignación de Metas Ponderadas</h2>
+                <button class="btn-close" onclick="metasMod.closeAdminModal()">✕</button>
+            </div>
+            
+            <div class="modal-body" style="overflow-y: auto; padding-right: 6px;">
+                <!-- Selector de Perfil a Administrar -->
+                <div class="admin-user-selector-bar">
+                    <label style="font-weight: 600; font-size: 0.9rem;">Colaboradora Seleccionada:</label>
+                    <select id="gm-select-user" class="select-sm" style="flex-grow: 1; height: 38px;" onchange="metasMod.onSelectUserToManage(this.value)">
+                        <!-- Se puebla dinámicamente con las colaboradoras -->
+                    </select>
+                </div>
+
+                <!-- Resumen de Ponderación en Vivo -->
+                <div class="admin-weights-indicator-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span>Balance de Pesos Asignados:</span>
+                        <span id="gm-weight-total-badge" class="badge-weight-ok">100% / 100%</span>
+                    </div>
+                    <div class="weight-balance-bar-bg" style="height: 10px;">
+                        <div class="weight-balance-bar-fill" id="gm-weight-bar" style="width: 100%;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-dim); margin-top: 4px;">
+                        <span id="gm-weight-feedback">✅ Ponderación completa (100%)</span>
+                        <span>Desempeño Global: <strong id="gm-overall-score" style="color: var(--accent-green-bright);">0%</strong></span>
+                    </div>
+                </div>
+
+                <!-- Formulario para Asignar Nueva Meta -->
+                <div class="admin-add-meta-section">
+                    <h3 style="font-size: 0.95rem; margin-bottom: 12px; color: var(--accent-green-bright);">➕ Asignar Nueva Meta al Perfil</h3>
+                    <form id="form-admin-add-meta" onsubmit="metasMod.handleAddMeta(event)">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Nombre de la Meta</label>
+                                <input type="text" id="gm-meta-titulo" placeholder="Ej: Revisión y Dictamen de Expedientes" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Categoría</label>
+                                <select id="gm-meta-categoria" class="select-sm" style="width: 100%; height: 38px;">
+                                    <option value="Caso Legal">⚖️ Caso Legal</option>
+                                    <option value="Desempeño">📈 Desempeño</option>
+                                    <option value="Capacitación">🎓 Capacitación</option>
+                                    <option value="OKR">🎯 OKR Estratégico</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Descripción Operativa</label>
+                            <textarea id="gm-meta-descripcion" rows="2" placeholder="Detalle y alcance de la meta..." required></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Indicador Tangible / KPI (Métrica de Éxito)</label>
+                            <input type="text" id="gm-meta-indicador" placeholder="Ej: 15 expedientes dictaminados por semana (≥95% efectividad)" required>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Peso Ponderado (%) <span style="color: var(--accent-green-bright);">(Suma debe dar 100)</span></label>
+                                <input type="number" id="gm-meta-peso" value="25" min="1" max="100" step="0.5" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Avance Inicial (%)</label>
+                                <input type="number" id="gm-meta-avance" value="0" min="0" max="100" step="1" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Fecha Límite</label>
+                                <input type="date" id="gm-meta-fecha" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-full" style="margin-top: 8px;">
+                            Guardar y Asignar Meta
+                        </button>
+                    </form>
+                </div>
+
+                <div class="divider" style="margin: 20px 0;"></div>
+
+                <!-- Lista de Metas Asignadas del Perfil -->
+                <h3 style="font-size: 0.95rem; margin-bottom: 12px;">📋 Metas Actuales del Colaborador</h3>
+                <div class="table-container" style="max-height: 240px; overflow-y: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Meta & Indicador</th>
+                                <th>Peso (%)</th>
+                                <th>Avance (%)</th>
+                                <th>Estatus</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-metas-table-body">
+                            <!-- Se puebla dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+	<!-- Modal de Vacaciones -->
+	<div class="modal-overlay" id="modal-vacaciones">
+        <div class="modal-card glass-card">
+            <div class="modal-header">
+                <h2>Solicitud de Vacaciones e Incidencias</h2>
+                <button class="btn-close" onclick="vacacionesMod.closeModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-solicitar-vacaciones">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Fecha Inicio</label>
+                            <input type="date" id="vac-inicio" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha Fin</label>
+                            <input type="date" id="vac-fin" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Motivo de la Solicitud</label>
+                        <textarea id="vac-motivo" rows="2" placeholder="Motivo o justificación..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-secondary btn-full">Enviar Solicitud en Tiempo Real</button>
+                </form>
+
+                <div class="divider" style="margin: 20px 0;"></div>
+
+                <h3>Historial y Aprobaciones del Equipo</h3>
+                <div class="table-container" style="max-height: 250px; overflow-y: auto; margin-top: 10px;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Colaboradora</th>
+                                <th>Tipo</th>
+                                <th>Días</th>
+                                <th>Estatus</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vacaciones-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+	<!-- Modal de Ficha de Colaborador Estilo Buk -->
+	<div class="modal-overlay" id="modal-perfil-colaborador">
+        <div class="modal-card glass-card buk-modal-container">
+            <div class="buk-modal-header-banner">
+                <button class="btn-close buk-btn-close" onclick="perfilMod.closeProfile()" title="Cerrar Ficha">✕</button>
+            </div>
+
+            <div class="buk-profile-identity-bar">
+                <!-- Foto de Perfil & Uploader -->
+                <div class="buk-avatar-wrapper" id="buk-avatar-dropzone" title="Arrastra una foto aquí o haz clic en la cámara para cambiar">
+                    <div id="buk-avatar-display" class="buk-avatar-display">
+                        <!-- Se puebla con la foto o iniciales -->
+                    </div>
+                    <button class="buk-photo-btn" id="buk-photo-upload-trigger" title="Subir / Cambiar Foto">
+                        📷
+                    </button>
+                    <input type="file" id="buk-photo-input" accept="image/png, image/jpeg, image/jpg, image/webp" class="hidden">
+                </div>
+
+                <!-- Datos de Identidad -->
+                <div class="buk-identity-info">
+                    <div class="buk-identity-top">
+                        <h2 id="buk-emp-name" class="buk-name-title">Lic. Ana Martinez</h2>
+                        <span id="buk-emp-role-badge" class="role-badge badge-jr">Abogada JR</span>
+                        <span id="buk-emp-status-pill" class="buk-status-pill status-active">🟢 Activo</span>
+                    </div>
+                    <div class="buk-identity-sub">
+                        <span id="buk-emp-puesto" style="color: var(--accent-green-bright); font-weight: 600;">Abogada Junior de Litigio</span>
+                        <span class="buk-dot-sep">•</span>
+                        <span id="buk-emp-dept" style="color: var(--text-muted);">Departamento Legal RDL</span>
+                        <span class="buk-dot-sep">•</span>
+                        <span id="buk-emp-id-badge" style="color: var(--text-dim); font-size: 0.8rem;">ID: RDL-001</span>
+                    </div>
+                </div>
+
+                <!-- Botones de Acción de Ficha -->
+                <div class="buk-identity-actions">
+                    <button class="btn btn-ghost btn-sm" onclick="perfilMod.openEditGeneralDataModal()" title="Editar Datos Laborales y Personales">
+                        ✏️ Editar Datos
+                    </button>
+                    <button class="btn btn-primary btn-sm buk-admin-only" onclick="perfilMod.switchBukTab('metas')" title="Asignar o Modificar Metas">
+                        🎯 Asignar Metas
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pestañas de Navegación estilo Buk -->
+            <div class="buk-tabs-nav">
+                <button class="buk-tab-btn active" id="buk-tab-btn-general" onclick="perfilMod.switchBukTab('general')">
+                    📄 Datos Generales & Laborales
+                </button>
+                <button class="buk-tab-btn" id="buk-tab-btn-metas" onclick="perfilMod.switchBukTab('metas')">
+                    🎯 Metas & KPIs Ponderados (100%)
+                </button>
+                <button class="buk-tab-btn" id="buk-tab-btn-vacaciones" onclick="perfilMod.switchBukTab('vacaciones')">
+                    🏖️ Vacaciones & Historial
+                </button>
+            </div>
+
+            <!-- Cuerpo de Pestañas -->
+            <div class="buk-modal-body">
+                <!-- Pestaña 1: Datos Generales y Laborales -->
+                <div id="buk-tab-pane-general" class="buk-tab-pane">
+                    <div id="buk-tab-general-content">
+                        <!-- Se puebla dinámicamente con las tarjetas de Buk -->
+                    </div>
+                </div>
+
+                <!-- Pestaña 2: Metas & KPIs Ponderados (100%) -->
+                <div id="buk-tab-pane-metas" class="buk-tab-pane hidden">
+                    <!-- Resumen de Ponderación Global -->
+                    <div class="buk-metas-overview-card">
+                        <div class="buk-metas-gauge-box">
+                            <div class="score-radial" style="width: 72px; height: 72px;">
+                                <span class="score-number" id="buk-meta-overall-score" style="font-size: 1.25rem;">0%</span>
+                                <span class="score-label">Desempeño</span>
+                            </div>
+                            <div style="flex-grow: 1;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                    <span style="font-size: 0.85rem; font-weight: 600;">Balance de Pesos Asignados:</span>
+                                    <span id="buk-meta-weight-badge" class="badge-weight-ok">100% / 100%</span>
+                                </div>
+                                <div class="weight-balance-bar-bg" style="height: 8px;">
+                                    <div class="weight-balance-bar-fill" id="buk-meta-weight-bar"></div>
+                                </div>
+                                <div style="margin-top: 4px; font-size: 0.75rem;" id="buk-meta-weight-feedback">
+                                    ✅ Ponderación completa (100%)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sección para Administradores / Abogadas SR: Asignar Meta Directamente -->
+                    <div class="buk-admin-add-meta buk-admin-only" style="margin-bottom: 20px;">
+                        <h3 style="font-size: 0.92rem; color: var(--accent-green-bright); margin-bottom: 10px;">
+                            ➕ Asignar Nueva Meta a esta Colaboradora
+                        </h3>
+                        <form id="form-buk-add-meta">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Nombre de la Meta</label>
+                                    <input type="text" id="buk-new-meta-titulo" placeholder="Ej: Auditoría de Contratos de Personal" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Categoría</label>
+                                    <select id="buk-new-meta-categoria" class="select-sm" style="width: 100%; height: 38px;">
+                                        <option value="Caso Legal">⚖️ Caso Legal</option>
+                                        <option value="Desempeño">📈 Desempeño</option>
+                                        <option value="Capacitación">🎓 Capacitación</option>
+                                        <option value="OKR">🎯 OKR Estratégico</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Descripción Operativa</label>
+                                <textarea id="buk-new-meta-descripcion" rows="2" placeholder="Detalle de las actividades y alcance..." required></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Indicador Tangible / KPI (Métrica de Éxito)</label>
+                                <input type="text" id="buk-new-meta-indicador" placeholder="Ej: 100% de expedientes auditados sin omisiones de firma" required>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Peso Ponderado (%) <span style="color: var(--accent-green-bright);">(Suma debe dar 100)</span></label>
+                                    <input type="number" id="buk-new-meta-peso" value="25" min="1" max="100" step="0.5" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Avance Inicial (%)</label>
+                                    <input type="number" id="buk-new-meta-avance" value="0" min="0" max="100" step="1" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Fecha Límite</label>
+                                    <input type="date" id="buk-new-meta-fecha" required>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-full" style="margin-top: 6px;">
+                                Guardar y Asignar Meta Ponderada
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Lista de Metas Asignadas -->
+                    <h3 style="font-size: 0.95rem; margin-bottom: 12px;">📋 Metas & Objetivos Asignados</h3>
+                    <div class="buk-metas-list" id="buk-metas-list-container">
+                        <!-- Se puebla dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Pestaña 3: Historial de Vacaciones e Incidencias -->
+                <div id="buk-tab-pane-vacaciones" class="buk-tab-pane hidden">
+                    <div class="buk-vacations-summary-row">
+                        <div class="buk-vac-stat-box">
+                            <span class="buk-vac-stat-val" id="buk-vac-total" style="color: var(--text-main);">12</span>
+                            <span class="buk-vac-stat-lbl">Días Asignados</span>
+                        </div>
+                        <div class="buk-vac-stat-box">
+                            <span class="buk-vac-stat-val" id="buk-vac-taken" style="color: #60a5fa;">2</span>
+                            <span class="buk-vac-stat-lbl">Días Tomados</span>
+                        </div>
+                        <div class="buk-vac-stat-box highlight">
+                            <span class="buk-vac-stat-val" id="buk-vac-remaining" style="color: var(--accent-green-bright);">10</span>
+                            <span class="buk-vac-stat-lbl">Días Disponibles</span>
+                        </div>
+                    </div>
+
+                    <h3 style="font-size: 0.95rem; margin: 18px 0 12px 0;">Historial de Solicitudes de Vacaciones</h3>
+                    <div class="table-container" style="max-height: 220px; overflow-y: auto;">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>Periodo</th>
+                                    <th style="text-align: center;">Días</th>
+                                    <th>Motivo</th>
+                                    <th>Estatus</th>
+                                </tr>
+                            </thead>
+                            <tbody id="buk-vacaciones-table-body">
+                                <!-- Se puebla dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Editar Datos Generales del Colaborador -->
+    <div class="modal-overlay" id="modal-editar-perfil-datos">
+        <div class="modal-card glass-card" style="max-width: 580px;">
+            <div class="modal-header">
+                <h2>✏️ Editar Ficha de Colaborador</h2>
+                <button class="btn-close" onclick="perfilMod.closeEditGeneralDataModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-edit-buk-profile">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Nombre Completo</label>
+                            <input type="text" id="edit-buk-nombre" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Puesto Corporativo</label>
+                            <input type="text" id="edit-buk-puesto" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Departamento</label>
+                            <input type="text" id="edit-buk-departamento" required>
+                        </div>
+                        <div class="form-group">
+                            <label>No. de Empleado</label>
+                            <input type="text" id="edit-buk-numero-empleado" placeholder="Ej: RDL-005">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Teléfono / Contacto</label>
+                            <input type="text" id="edit-buk-telefono" placeholder="Ej: +52 (55) 5482-9000">
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha de Ingreso</label>
+                            <input type="date" id="edit-buk-fecha-ingreso">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Tipo de Contrato</label>
+                            <select id="edit-buk-tipo-contrato" class="select-sm" style="width: 100%; height: 38px;">
+                                <option value="Tiempo Indeterminado">Tiempo Indeterminado</option>
+                                <option value="Tiempo Determinado (6 meses)">Tiempo Determinado (6 meses)</option>
+                                <option value="Honorarios Asimilados">Honorarios Asimilados</option>
+                                <option value="Periodo de Prueba (3 meses)">Periodo de Prueba (3 meses)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Estatus Laboral</label>
+                            <select id="edit-buk-estatus-laboral" class="select-sm" style="width: 100%; height: 38px;">
+                                <option value="Activo">🟢 Activo</option>
+                                <option value="En Vacaciones">🏖️ En Vacaciones</option>
+                                <option value="Incapacidad">🏥 Incapacidad Médica</option>
+                                <option value="Permiso Especial">📋 Permiso Especial</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Salario Base Mensual (Opcional / Privado)</label>
+                        <input type="number" id="edit-buk-salario-base" placeholder="Ej: 25000">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-full" style="margin-top: 12px;">
+                        Guardar Cambios de Ficha
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+	<!-- Modal de Red & Conexión Online Remota -->
+	<div class="modal-overlay" id="modal-network">
+        <div class="modal-card glass-card" style="max-width: 580px;">
+            <div class="modal-header">
+                <h2>🌐 Interconexión en Tiempo Real (Local & Remota)</h2>
+                <button class="btn-close" onclick="document.getElementById('modal-network').classList.remove('active')">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 14px; line-height: 1.5;">
+                    Para conectar esta aplicación instalada con el servidor central de RDL en tiempo real:
+                </p>
+
+                <div class="form-group">
+                    <label style="font-weight: 700; color: var(--rdl-navy);">URL del Servidor Online o IP Local:</label>
+                    <input type="text" id="network-ip-input" placeholder="Ej: https://hub.rdl.com.mx o 192.168.1.50" value="localhost">
+                    <small style="color: var(--text-dim); display: block; margin-top: 5px; font-size: 0.76rem;">
+                        💡 <strong>Oficina Remota / Online:</strong> Ingresa la URL pública segura (ej: Cloudflare Tunnel o dominio).<br>
+                        🏢 <strong>Misma Red Local:</strong> Ingresa la IP de la computadora servidora (ej: 192.168.1.50).
+                    </small>
+                </div>
+
+                <div class="network-ips-box" style="background: var(--bg-alt); padding: 12px; border-radius: var(--radius-md); margin-bottom: 16px; border: 1px solid var(--border-light);">
+                    <span style="font-size: 0.8rem; color: var(--rdl-teal); font-weight: 700;">Direcciones IP de esta computadora:</span>
+                    <ul id="local-ips-list" class="ip-list" style="margin-top: 6px; padding-left: 18px; font-size: 0.82rem; color: var(--text-muted);"></ul>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-primary btn-full" onclick="window.clientSocket.reconnectToIP(document.getElementById('network-ip-input').value)">
+                        Vincular y Conectar en Tiempo Real
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+	<!-- Core JavaScript Modules -->
+	<script is:inline src="/js/client.js"></script>
+	<script is:inline src="/js/modules/empleado.js"></script>
+	<script is:inline src="/js/modules/metas.js"></script>
+	<script is:inline src="/js/modules/feed.js"></script>
+	<script is:inline src="/js/modules/vacaciones.js"></script>
+	<script is:inline src="/js/modules/directorio.js"></script>
+	<script is:inline src="/js/modules/perfil.js"></script>
+	<script is:inline src="/js/app.js"></script>
+</Layout>

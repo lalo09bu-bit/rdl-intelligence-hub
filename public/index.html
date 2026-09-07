@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RDL Intelligence Hub - Plataforma Corporativa</title>
+    
+    <!-- Fuentes Google Fonts: Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- GSAP (GreenSock Animation Platform) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <!-- Socket.io Client -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
+    
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="rdl-theme">
+
+    <!-- ============================================================
+         1. PANTALLA SPLASH DE CARGA INICIAL (RDL FLOATING LOGO)
+         ============================================================ -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-content">
+            <div class="logo-glow-wrapper">
+                <img src="Logo RDL.png" alt="RDL Logo" class="splash-logo-floating" id="splash-logo">
+                <div class="green-sparkles-container">
+                    <span class="sparkle s1"></span>
+                    <span class="sparkle s2"></span>
+                    <span class="sparkle s3"></span>
+                </div>
+            </div>
+            <h1 class="splash-title">RDL INTELLIGENCE HUB</h1>
+            <p class="splash-subtitle">Reclutamiento e Integración de Talento</p>
+            
+            <div class="splash-loader-bar">
+                <div class="splash-loader-progress" id="splash-progress"></div>
+            </div>
+            <span class="splash-status-text" id="splash-status-text">Cargando módulos e interconexión en tiempo real...</span>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         2. PANTALLA DE INICIO DE SESIÓN / SELECCIÓN DE PERFIL
+         ============================================================ -->
+    <div id="login-modal" class="modal-overlay active">
+        <div class="modal-card glass-card login-card">
+            <div class="login-header">
+                <img src="Logo RDL.png" alt="RDL Logo" class="login-brand-logo">
+                <h2>RDL Intelligence Hub</h2>
+                <p>Selecciona tu perfil de usuario para ingresar a la plataforma</p>
+            </div>
+
+            <div class="role-selector-grid">
+                <!-- Rol 1: Administrador -->
+                <div class="role-card" onclick="loginMod.selectRole('ADMIN')">
+                    <div class="role-avatar admin-avatar">SR</div>
+                    <div class="role-info">
+                        <h3>Lic. Sofia Ramirez</h3>
+                        <span class="role-badge badge-admin">Administrador</span>
+                        <p class="role-desc">Acceso total, publicación en el muro y aprobación de vacaciones.</p>
+                    </div>
+                </div>
+
+                <!-- Rol 2: Abogada SR -->
+                <div class="role-card" onclick="loginMod.selectRole('ABOGADA_SR')">
+                    <div class="role-avatar sr-avatar">VM</div>
+                    <div class="role-info">
+                        <h3>Lic. Valeria Mendoza</h3>
+                        <span class="role-badge badge-sr">Abogada SR</span>
+                        <p class="role-desc">Publicación en muro, gestión de equipo y aprobación de incidencias.</p>
+                    </div>
+                </div>
+
+                <!-- Rol 3: Abogada JR -->
+                <div class="role-card" onclick="loginMod.selectRole('ABOGADA_JR')">
+                    <div class="role-avatar jr-avatar">AM</div>
+                    <div class="role-info">
+                        <h3>Lic. Ana Martinez</h3>
+                        <span class="role-badge badge-jr">Abogada JR</span>
+                        <p class="role-desc">Ficha de empleado, saldo de vacaciones y visualización de muro.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         3. PLATAFORMA PRINCIPAL (APP LAYOUT)
+         ============================================================ -->
+    <div class="app-layout hidden" id="main-app-layout">
+        
+        <!-- HEADER CORPORATIVO RDL -->
+        <header class="rdl-header">
+            <div class="header-brand">
+                <img src="Logo RDL.png" alt="RDL Logo" class="header-logo">
+                <div>
+                    <span class="header-title">RDL INTELLIGENCE HUB</span>
+                    <span class="header-subtitle">Plataforma Corporativa Interconectada</span>
+                </div>
+            </div>
+
+            <div class="header-center-info">
+                <div class="network-badge" id="btn-network-config" title="Haz clic para vincular otra computadora">
+                    <span class="pulse-green"></span>
+                    <span id="network-status-text">Red RDL Activa (Puerto 9060)</span>
+                </div>
+            </div>
+
+            <div class="header-user-profile">
+                <div class="header-user-info">
+                    <span class="header-user-name" id="current-user-name">Lic. Ana Martinez</span>
+                    <span class="header-user-role" id="current-user-role-badge">Abogada JR</span>
+                </div>
+                <button class="btn btn-ghost btn-sm" onclick="loginMod.logout()" title="Cerrar Sesión">
+                    🚪 Salir
+                </button>
+            </div>
+        </header>
+
+        <!-- CONTENIDO PRINCIPAL: 2 COLUMNAS (PANEL IZQUIERDO Y COMUNICACIÓN CENTRAL) -->
+        <div class="rdl-workspace">
+
+            <!-- ============================================================
+                 PANEL IZQUIERDO: FICHA DEL EMPLEADO + METAS
+                 ============================================================ -->
+            <aside class="left-panel">
+
+                <!-- FICHA DEL EMPLEADO -->
+                <div class="glass-card employee-card">
+                    <div class="card-tag">Ficha de Colaborador</div>
+                    <div class="employee-avatar-wrapper">
+                        <div class="employee-avatar" id="emp-avatar">AM</div>
+                        <div class="green-online-badge"></div>
+                    </div>
+                    
+                    <h2 class="employee-name" id="emp-name">Lic. Ana Martinez</h2>
+                    <span class="employee-puesto" id="emp-puesto">Abogada Junior de Litigio</span>
+                    <span class="employee-dept" id="emp-dept">Departamento Legal RDL</span>
+
+                    <div class="divider"></div>
+
+                    <!-- SALDO DE VACACIONES RESTANTES -->
+                    <div class="vacations-box">
+                        <div class="vacations-header">
+                            <span>Saldo de Vacaciones</span>
+                            <button class="btn-link" onclick="vacacionesMod.openModal()">Solicitar</button>
+                        </div>
+                        <div class="vacations-gauge-container">
+                            <div class="vacation-circle">
+                                <span class="vacation-days-number" id="emp-vacations-remaining">10</span>
+                                <span class="vacation-days-label">Días Libres</span>
+                            </div>
+                        </div>
+                        <div class="vacations-stats">
+                            <div class="vstat">
+                                <span class="vstat-num" id="emp-vacations-total">12</span>
+                                <span class="vstat-lbl">Totales</span>
+                            </div>
+                            <div class="vstat">
+                                <span class="vstat-num" id="emp-vacations-taken">2</span>
+                                <span class="vstat-lbl">Tomados</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MÓDULO DE METAS PERSONALES -->
+                <div class="glass-card metas-card">
+                    <div class="metas-header">
+                        <h3>Módulo de Metas</h3>
+                        <span class="metas-badge" id="metas-count-badge">3 Metas</span>
+                    </div>
+
+                    <div class="metas-list" id="metas-list-container">
+                        <!-- Renderizado dinámico de metas -->
+                    </div>
+                </div>
+            </aside>
+
+            <!-- ============================================================
+                 PANEL CENTRAL: COMUNICACIÓN GENERAL (MURO ESTILO FACEBOOK)
+                 ============================================================ -->
+            <main class="center-panel">
+                
+                <!-- CREADOR DE PUBLICACIONES (SOLO ADMIN Y ABOGADA SR) -->
+                <div class="glass-card post-composer" id="post-composer-card">
+                    <div class="composer-header">
+                        <div class="user-avatar-sm" id="composer-user-avatar">SR</div>
+                        <span class="composer-prompt">¿Qué deseas publicar hoy para el equipo de RDL?</span>
+                    </div>
+                    
+                    <form id="form-create-post">
+                        <div class="form-group">
+                            <input type="text" id="post-titulo" placeholder="Título del anuncio o aviso corporativo..." required>
+                        </div>
+                        <div class="form-group">
+                            <textarea id="post-contenido" rows="3" placeholder="Escribe el mensaje o comunicado oficial..." required></textarea>
+                        </div>
+                        
+                        <div class="composer-actions">
+                            <select id="post-categoria" class="select-sm">
+                                <option value="Corporativo">📢 Corporativo</option>
+                                <option value="Aviso Legal">⚖️ Aviso Legal</option>
+                                <option value="Integracion">🎉 Integración</option>
+                                <option value="Urgente">🚨 Urgente</option>
+                            </select>
+
+                            <button type="submit" class="btn btn-primary">
+                                Publicar en el Muro RDL
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- BANNER DE RESTRICCIÓN PARA ABOGADAS JR -->
+                <div class="glass-card jr-notice-card hidden" id="jr-notice-card">
+                    <div class="notice-content">
+                        <span>ℹ️</span>
+                        <p><strong>Muro de Comunicación General RDL:</strong> Como Abogada JR puedes leer, dar Me Gusta y comentar todas las publicaciones oficiales.</p>
+                    </div>
+                </div>
+
+                <!-- MURO DE COMUNICACIONES / FEED ESTILO FACEBOOK -->
+                <div class="feed-stream" id="feed-stream-container">
+                    <!-- Renderizado dinámico de publicaciones estilo Facebook -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL DE SOLICITUD / APROBACIÓN DE VACACIONES
+         ============================================================ -->
+    <div class="modal-overlay" id="modal-vacaciones">
+        <div class="modal-card glass-card">
+            <div class="modal-header">
+                <h2>Solicitud de Vacaciones e Incidencias</h2>
+                <button class="btn-close" onclick="vacacionesMod.closeModal()">✕</button>
+            </div>
+
+            <!-- TABLA Y SOLICITANTE -->
+            <div class="modal-body">
+                <form id="form-solicitar-vacaciones">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Fecha Inicio</label>
+                            <input type="date" id="vac-inicio" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Fecha Fin</label>
+                            <input type="date" id="vac-fin" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Motivo de la Solicitud</label>
+                        <textarea id="vac-motivo" rows="2" placeholder="Motivo o justificación..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-secondary btn-full">Enviar Solicitud en Tiempo Real</button>
+                </form>
+
+                <div class="divider" style="margin: 20px 0;"></div>
+
+                <h3>Historial y Aprobaciones del Equipo</h3>
+                <div class="table-container" style="max-height: 250px; overflow-y: auto; margin-top: 10px;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Colaboradora</th>
+                                <th>Tipo</th>
+                                <th>Días</th>
+                                <th>Estatus</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="vacaciones-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL DE CONFIGURACIÓN DE RED E INTERCONEXIÓN MULTI-COMPUTADORA
+         ============================================================ -->
+    <div class="modal-overlay" id="modal-network">
+        <div class="modal-card glass-card">
+            <div class="modal-header">
+                <h2>🌐 Interconexión Multi-Computadora RDL</h2>
+                <button class="btn-close" onclick="document.getElementById('modal-network').classList.remove('active')">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px;">
+                    Para conectar esta aplicación instalada con otra computadora de la oficina en tiempo real:
+                </p>
+
+                <div class="form-group">
+                    <label>IP del Nodo Servidor RDL (Servidor Principal):</label>
+                    <input type="text" id="network-ip-input" placeholder="Ej: 192.168.1.50" value="localhost">
+                </div>
+
+                <div class="network-ips-box">
+                    <span style="font-size: 0.8rem; color: var(--accent-green); font-weight: 600;">Direcciones IP de esta computadora:</span>
+                    <ul id="local-ips-list" class="ip-list"></ul>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-primary btn-full" onclick="window.clientSocket.reconnectToIP(document.getElementById('network-ip-input').value)">
+                        Vincular y Conectar en Tiempo Real
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTENEDOR TOAST NOTIFICACIONES -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- SCRIPTS DE MÓDULOS RDL -->
+    <script src="js/client.js"></script>
+    <script src="js/modules/empleado.js"></script>
+    <script src="js/modules/feed.js"></script>
+    <script src="js/modules/vacaciones.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

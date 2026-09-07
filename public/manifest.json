@@ -1,0 +1,22 @@
+{
+  "name": "RDL Intelligence Hub",
+  "short_name": "RDL Hub",
+  "description": "Plataforma Corporativa Interconectada RDL",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070d19",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "/Logo RDL.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}

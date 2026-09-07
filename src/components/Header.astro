@@ -1,0 +1,52 @@
+---
+---
+<header class="rdl-header">
+    <div class="header-brand">
+        <img src="/Logo RDL.png" alt="RDL Logo" class="header-logo" onerror="this.onerror=null; this.src='Logo RDL.png';">
+        <div>
+            <span class="header-title">RDL INTELLIGENCE HUB</span>
+            <span class="header-subtitle">Plataforma Corporativa Interconectada (Astro Powered)</span>
+        </div>
+    </div>
+
+    <!-- Buscador Global estilo Buk / Spotlight Search -->
+    <div class="header-search-wrapper" id="header-search-container">
+        <div class="header-search-bar">
+            <span class="search-icon">🔍</span>
+            <input 
+                type="text" 
+                id="header-search-input" 
+                placeholder="Buscar colaboradora, puesto, departamento o ID..." 
+                autocomplete="off"
+            />
+            <div class="search-kbd-badge" title="Atajo de teclado">
+                <kbd>Ctrl</kbd> + <kbd>K</kbd>
+            </div>
+            <button class="btn-directorio-trigger" onclick="directorioMod.openDirectory()" title="Abrir Directorio Completo">
+                👥 Directorio
+            </button>
+        </div>
+
+        <!-- Dropdown Flotante de Resultados de Búsqueda -->
+        <div class="header-search-dropdown glass-card" id="header-search-results">
+            <!-- Se puebla dinámicamente desde directorio.js -->
+        </div>
+    </div>
+
+    <div class="header-center-info">
+        <div class="network-badge" id="btn-network-config" title="Haz clic para vincular otra computadora">
+            <span class="pulse-green"></span>
+            <span id="network-status-text">Red RDL Activa (Puerto 9060)</span>
+        </div>
+    </div>
+
+    <div class="header-user-profile">
+        <div class="header-user-info">
+            <span class="header-user-name" id="current-user-name">Lic. Ana Martinez</span>
+            <span class="header-user-role" id="current-user-role-badge">Abogada JR</span>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loginMod.logout()" title="Cerrar Sesión">
+            🚪 Salir
+        </button>
+    </div>
+</header>

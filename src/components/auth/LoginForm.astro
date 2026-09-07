@@ -1,0 +1,634 @@
+---
+// Componente LoginForm.astro - Autenticación Passwordless mediante Magic Links
+---
+
+<div class="login-wrapper">
+    <div class="login-card" id="login-card-container">
+        <!-- Encabezado con Logo RDL -->
+        <div class="login-header">
+            <div class="logo-circle">
+                <img src="/Logo RDL.png" alt="Logo RDL" class="login-logo" onerror="this.onerror=null; this.src='Logo RDL.png';" />
+            </div>
+            <h1 class="login-title">RDL Intelligence Hub</h1>
+            <p class="login-subtitle">Plataforma Corporativa & Dirección de Talento</p>
+        </div>
+
+        <!-- Banner de Mensajes de Error (si viene por query string o validación) -->
+        <div id="login-error-banner" class="login-alert error hidden">
+            <span class="alert-icon">⚠️</span>
+            <span id="login-error-text">El enlace mágico es inválido o ha expirado. Por favor solicita uno nuevo.</span>
+        </div>
+
+        <!-- Banner de Notificación Informativa -->
+        <div id="login-info-banner" class="login-alert info hidden">
+            <span class="alert-icon">ℹ️</span>
+            <span id="login-info-text"></span>
+        </div>
+
+        <!-- Formulario de Solicitud de Magic Link -->
+        <form id="magic-link-form" class="login-form">
+            <div class="form-group">
+                <label for="email-input" class="form-label">Correo Institucional RDL</label>
+                <div class="input-with-icon">
+                    <span class="input-icon">✉️</span>
+                    <input 
+                        type="email" 
+                        id="email-input" 
+                        name="email" 
+                        required 
+                        placeholder="tu.correo@rdl.com.mx" 
+                        class="form-input" 
+                        autocomplete="email"
+                    />
+                </div>
+                <span class="form-hint">Te enviaremos un enlace de acceso seguro a tu bandeja de entrada.</span>
+            </div>
+
+            <button type="submit" id="btn-submit-magic" class="btn-primary-login">
+                <span id="btn-text">Enviar Enlace de Acceso</span>
+                <div id="btn-spinner" class="spinner hidden"></div>
+            </button>
+        </form>
+
+        <!-- Acceso Rápido de Prueba (Dev Mode) -->
+        <div class="divider">
+            <span>o acceso rápido de prueba (dev mode)</span>
+        </div>
+
+        <div class="dev-mode-card" id="dev-quick-access-box">
+            <div class="dev-mode-header">
+                <span class="dev-mode-badge">⚡ ACCESO RÁPIDO CON 1 CLIC</span>
+                <span class="dev-mode-subtitle">Evalúa permisos y perfiles sin correo:</span>
+            </div>
+            
+            <div class="dev-buttons-stack">
+                <a href="/api/auth/dev-login?role=RH" class="btn-dev-login role-rh" title="Acceso total a Dirección de Talento">
+                    <span class="role-icon">👑</span>
+                    <div class="role-meta">
+                        <span class="role-name">Entrar como RH / Admin</span>
+                        <span class="role-user">Lic. Andrés Cosmes (rh@rdl.com.mx)</span>
+                    </div>
+                    <span class="role-badge">Admin</span>
+                </a>
+
+                <a href="/api/auth/dev-login?role=ABOGADA_SR" class="btn-dev-login role-sr" title="Supervisión legal y dictámenes">
+                    <span class="role-icon">⚖️</span>
+                    <div class="role-meta">
+                        <span class="role-name">Entrar como Abogada Sr</span>
+                        <span class="role-user">Lic. Valeria Mendoza (valeria.mendoza@rdl.com.mx)</span>
+                    </div>
+                    <span class="role-badge">Senior</span>
+                </a>
+
+                <a href="/api/auth/dev-login?role=ABOGADA_JR" class="btn-dev-login role-jr" title="Avance de expedientes y metas">
+                    <span class="role-icon">💼</span>
+                    <div class="role-meta">
+                        <span class="role-name">Entrar como Abogada Jr</span>
+                        <span class="role-user">Lic. Ana Martínez (ana.martinez@rdl.com.mx)</span>
+                    </div>
+                    <span class="role-badge">Junior</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Pantalla de Éxito al Enviar Magic Link -->
+        <div id="magic-success-screen" class="success-screen hidden">
+            <div class="success-icon-wrap">
+                <span class="success-check">✓</span>
+            </div>
+            <h2 class="success-title">¡Enlace Mágico Generado!</h2>
+            <p class="success-desc">
+                Se ha generado el enlace para <strong id="sent-email-display">tu dirección institucional</strong>.
+            </p>
+            <div class="success-notice">
+                ⏱️ Este enlace es de un solo uso y expirará en <strong>15 minutos</strong>.<br><br>
+                💡 <em>En modo desarrollo sin API de Resend, el enlace se imprime resaltado directamente en la consola/terminal:</em><br>
+                <code>🔗 [DEV LINK] Clic aquí para iniciar sesión:...</code>
+            </div>
+
+            <!-- Botón de Acceso Directo Local en Modo Dev -->
+            <div style="margin-bottom: 16px;">
+                <a id="btn-dev-direct-login" href="#" class="btn-primary-login" style="text-decoration: none; font-size: 13px; padding: 11px 16px; background-color: #136a60;">
+                    🚀 Ingresar Directamente a la Plataforma (Dev Mode) →
+                </a>
+            </div>
+
+            <button type="button" id="btn-retry-login" class="btn-link-action">
+                ← Solicitar otro enlace
+            </button>
+        </div>
+
+        <!-- Pie de tarjeta corporativo -->
+        <div class="login-footer">
+            <span>RDL Abogados & Consultoría • Seguridad Criptográfica SHA-256</span>
+        </div>
+    </div>
+</div>
+
+<style>
+    .login-wrapper {
+        min-height: 100vh;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8fafc;
+        background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+        background-size: 24px 24px;
+        padding: 24px;
+        box-sizing: border-box;
+    }
+
+    .login-card {
+        width: 100%;
+        max-width: 440px;
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px -5px rgba(15, 45, 74, 0.08), 0 0 0 1px #e2e8f0;
+        padding: 36px 32px;
+        box-sizing: border-box;
+    }
+
+    .login-header {
+        text-align: center;
+        margin-bottom: 28px;
+    }
+
+    .logo-circle {
+        width: 64px;
+        height: 64px;
+        border-radius: 16px;
+        background: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 14px rgba(15, 45, 74, 0.1);
+        border: 1px solid #e2e8f0;
+        margin-bottom: 16px;
+    }
+
+    .login-logo {
+        width: 44px;
+        height: 44px;
+        object-fit: contain;
+    }
+
+    .login-title {
+        font-family: 'Outfit', -apple-system, sans-serif;
+        font-size: 24px;
+        font-weight: 700;
+        color: #0f2d4a; /* Azul Marino Corporativo */
+        margin: 0 0 6px 0;
+        letter-spacing: -0.5px;
+    }
+
+    .login-subtitle {
+        font-size: 13px;
+        color: #64748b;
+        margin: 0;
+        font-weight: 500;
+    }
+
+    .login-alert {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 14px;
+        border-radius: 8px;
+        font-size: 13px;
+        margin-bottom: 20px;
+        line-height: 1.4;
+    }
+
+    .login-alert.error {
+        background-color: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+    }
+
+    .login-alert.info {
+        background-color: #f0fdfa;
+        border: 1px solid #ccfbf1;
+        color: #115e59;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 6px;
+    }
+
+    .input-with-icon {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 14px;
+        font-size: 15px;
+        color: #64748b;
+        pointer-events: none;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 12px 14px 12px 42px;
+        font-size: 14px;
+        color: #0f2d4a;
+        background-color: #ffffff;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 8px;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        box-sizing: border-box;
+    }
+
+    .form-input:focus {
+        border-color: #0f2d4a;
+        box-shadow: 0 0 0 3px rgba(15, 45, 74, 0.12);
+    }
+
+    .form-hint {
+        display: block;
+        font-size: 12px;
+        color: #64748b;
+        margin-top: 6px;
+    }
+
+    .btn-primary-login {
+        width: 100%;
+        padding: 13px 20px;
+        background-color: #0f2d4a; /* Azul Marino Corporativo */
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: background-color 0.2s, transform 0.1s;
+    }
+
+    .btn-primary-login:hover {
+        background-color: #173f64;
+    }
+
+    .btn-primary-login:active {
+        transform: scale(0.99);
+    }
+
+    .btn-primary-login:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    .divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 24px 0 16px 0;
+        color: #94a3b8;
+        font-size: 12px;
+    }
+
+    .divider::before, .divider::after {
+        content: '';
+        flex: 1;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .divider span {
+        padding: 0 10px;
+    }
+
+    /* Estilos del Acceso Rápido Dev Mode */
+    .dev-mode-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 8px;
+    }
+
+    .dev-mode-header {
+        margin-bottom: 10px;
+    }
+
+    .dev-mode-badge {
+        display: inline-block;
+        background-color: #f1f5f9;
+        color: #0f2d4a;
+        border: 1px solid #cbd5e1;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        padding: 3px 8px;
+        border-radius: 4px;
+        margin-bottom: 4px;
+    }
+
+    .dev-mode-subtitle {
+        display: block;
+        font-size: 11.5px;
+        color: #64748b;
+    }
+
+    .dev-buttons-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .btn-dev-login {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        text-decoration: none;
+        color: #1e293b;
+        transition: all 0.2s;
+    }
+
+    .btn-dev-login:hover {
+        border-color: #0f2d4a;
+        box-shadow: 0 2px 8px rgba(15, 45, 74, 0.08);
+        transform: translateY(-1px);
+    }
+
+    .btn-dev-login .role-icon {
+        font-size: 18px;
+        margin-right: 10px;
+    }
+
+    .btn-dev-login .role-meta {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        text-align: left;
+    }
+
+    .btn-dev-login .role-name {
+        font-size: 13px;
+        font-weight: 600;
+        color: #0f2d4a;
+    }
+
+    .btn-dev-login .role-user {
+        font-size: 11px;
+        color: #64748b;
+    }
+
+    .btn-dev-login .role-badge {
+        font-size: 10px;
+        font-weight: 600;
+        padding: 2px 7px;
+        border-radius: 4px;
+        background: #e2e8f0;
+        color: #334155;
+    }
+
+    .btn-dev-login.role-rh .role-badge {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .btn-dev-login.role-sr .role-badge {
+        background: #e0f2fe;
+        color: #0369a1;
+    }
+
+    .btn-dev-login.role-jr .role-badge {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    /* Pantalla de Éxito */
+    .success-screen {
+        text-align: center;
+        padding: 8px 0;
+    }
+
+    .success-icon-wrap {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background-color: #f0fdf4;
+        border: 2px solid #136a60; /* Verde Pino Corporativo */
+        color: #136a60;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        font-weight: 700;
+        margin-bottom: 16px;
+    }
+
+    .success-title {
+        font-family: 'Outfit', sans-serif;
+        font-size: 20px;
+        font-weight: 700;
+        color: #0f2d4a;
+        margin: 0 0 10px 0;
+    }
+
+    .success-desc {
+        font-size: 14px;
+        color: #334155;
+        line-height: 1.5;
+        margin: 0 0 18px 0;
+    }
+
+    .success-notice {
+        background-color: #f8fafc;
+        border-left: 3px solid #136a60;
+        padding: 12px 14px;
+        border-radius: 6px;
+        font-size: 12.5px;
+        color: #475569;
+        text-align: left;
+        line-height: 1.5;
+        margin-bottom: 20px;
+    }
+
+    .btn-link-action {
+        background: none;
+        border: none;
+        color: #0f2d4a;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: underline;
+        padding: 6px;
+    }
+
+    .btn-link-action:hover {
+        color: #136a60;
+    }
+
+    .login-footer {
+        margin-top: 28px;
+        padding-top: 16px;
+        border-top: 1px solid #f1f5f9;
+        text-align: center;
+        font-size: 11px;
+        color: #94a3b8;
+    }
+
+    .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: #ffffff;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .hidden {
+        display: none !important;
+    }
+</style>
+
+<script is:inline>
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('magic-link-form');
+    const emailInput = document.getElementById('email-input');
+    const submitBtn = document.getElementById('btn-submit-magic');
+    const btnText = document.getElementById('btn-text');
+    const btnSpinner = document.getElementById('btn-spinner');
+    const errorBanner = document.getElementById('login-error-banner');
+    const errorText = document.getElementById('login-error-text');
+    const successScreen = document.getElementById('magic-success-screen');
+    const sentEmailDisplay = document.getElementById('sent-email-display');
+    const retryBtn = document.getElementById('btn-retry-login');
+    const quickRhBtn = document.getElementById('btn-quick-rh');
+
+    // Revisar si la URL contiene errores (ej. token expirado)
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorParam = urlParams.get('error');
+
+    if (errorParam) {
+        errorBanner.classList.remove('hidden');
+        if (errorParam === 'token_expirado_o_invalido' || errorParam === 'token_invalido') {
+            errorText.textContent = 'El enlace de acceso ya fue utilizado o ha expirado (15 minutos). Por favor solicita uno nuevo.';
+        } else if (errorParam === 'sesion_expirada') {
+            errorText.textContent = 'Tu sesión ha finalizado. Por favor ingresa nuevamente con tu correo.';
+        } else {
+            errorText.textContent = 'Ocurrió un error al verificar tu acceso. Por favor intenta de nuevo.';
+        }
+    }
+
+    // Botón de prueba rápida con cuenta de RH
+    if (quickRhBtn) {
+        quickRhBtn.addEventListener('click', () => {
+            emailInput.value = 'rh@rdl.com.mx';
+            emailInput.focus();
+        });
+    }
+
+    // Manejar envío del formulario de Magic Link
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = emailInput.value.trim();
+
+            if (!email) return;
+
+            // Estado de carga
+            submitBtn.disabled = true;
+            btnText.textContent = 'Enviando enlace seguro...';
+            btnSpinner.classList.remove('hidden');
+            errorBanner.classList.add('hidden');
+
+            try {
+                // Se utiliza ruta relativa estricta (regla: sin localhost quemado)
+                const res = await fetch('/api/auth/magic-link', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    // Mostrar pantalla de confirmación exitosa
+                    sentEmailDisplay.textContent = email;
+                    form.classList.add('hidden');
+                    document.querySelector('.divider')?.classList.add('hidden');
+                    document.getElementById('dev-quick-access-box')?.classList.add('hidden');
+                    
+                    const directDevBtn = document.getElementById('btn-dev-direct-login');
+                    if (directDevBtn) {
+                        directDevBtn.href = `/api/auth/dev-login?email=${encodeURIComponent(email)}`;
+                    }
+
+                    successScreen.classList.remove('hidden');
+
+                    if (typeof gsap !== 'undefined') {
+                        gsap.from('#magic-success-screen', {
+                            opacity: 0,
+                            y: 15,
+                            duration: 0.4,
+                            ease: 'power2.out'
+                        });
+                    }
+                } else {
+                    errorBanner.classList.remove('hidden');
+                    errorText.textContent = data.error || 'No fue posible procesar la solicitud. Por favor intenta de nuevo.';
+                }
+            } catch (err) {
+                console.error('Error de red al solicitar Magic Link:', err);
+                errorBanner.classList.remove('hidden');
+                errorText.textContent = 'No se pudo contactar con el servidor. Verifica tu conexión de red.';
+            } finally {
+                submitBtn.disabled = false;
+                btnText.textContent = 'Enviar Enlace de Acceso';
+                btnSpinner.classList.add('hidden');
+            }
+        });
+    }
+
+    // Botón para reintentar / solicitar otro enlace
+    if (retryBtn) {
+        retryBtn.addEventListener('click', () => {
+            successScreen.classList.add('hidden');
+            form.classList.remove('hidden');
+            document.querySelector('.divider')?.classList.remove('hidden');
+            document.getElementById('dev-quick-access-box')?.classList.remove('hidden');
+            emailInput.value = '';
+            emailInput.focus();
+        });
+    }
+
+    // Animación de entrada suave con GSAP
+    if (typeof gsap !== 'undefined') {
+        gsap.from('#login-card-container', {
+            opacity: 0,
+            scale: 0.96,
+            y: 20,
+            duration: 0.5,
+            ease: 'back.out(1.2)'
+        });
+    }
+});
+</script>

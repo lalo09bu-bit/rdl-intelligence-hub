@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Production build output
+dist/
+.astro/
+
+# Environment and secrets
+.env
+.env.local
+.env.production
+
+# SQLite Databases & temporary journal files
+*.db-wal
+*.db-shm
+*.db-journal
+adelta_client.db
+rdl_intelligence_hub.db
+
+# Installer, large binaries and native artifacts
+bin/
+*.exe
+OutputInstaller/
+*.log
+npm-debug.log*
+
+# AI Agent metadata
+.agent/
+
+# Windows / OS generated files
+Thumbs.db
+.DS_Store
+%LOCALAPPDATA%/

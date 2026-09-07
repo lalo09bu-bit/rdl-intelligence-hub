@@ -1,0 +1,44 @@
+{
+  "applicationId": "com.rdlhub.client",
+  "defaultMode": "window",
+  "port": 9060,
+  "url": "/",
+  "documentRoot": "/dist/",
+  "tokenSecurity": "one-time",
+  "logging": {
+    "enabled": true,
+    "writeToLogFile": true
+  },
+  "nativeAllowList": [
+    "app.*",
+    "os.*",
+    "window.*",
+    "events.*",
+    "filesystem.*",
+    "storage.*"
+  ],
+  "modes": {
+    "window": {
+      "title": "RDL Intelligence Hub - Plataforma Corporativa",
+      "width": 1360,
+      "height": 860,
+      "minWidth": 960,
+      "minHeight": 650,
+      "fullScreen": false,
+      "alwaysOnTop": false,
+      "icon": "/public/Logo RDL.png",
+      "enableInspector": true,
+      "borderless": false,
+      "maximize": false,
+      "hidden": false,
+      "resizable": true,
+      "exitProcessOnClose": true
+    }
+  },
+  "cli": {
+    "binaryName": "RDL_Intelligence_Hub",
+    "resourcesPath": "/dist/",
+    "extensionsPath": "/extensions/",
+    "clientLibrary": "/public/js/neutralino.js"
+  }
+}
