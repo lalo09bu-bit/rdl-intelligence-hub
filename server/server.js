@@ -34,7 +34,7 @@ const distPath = path.join(__dirname, '..', 'dist');
 const publicPath = path.join(__dirname, '..', 'public');
 
 app.use(express.static(distPath, { index: false }));
-app.use(express.static(publicPath));
+app.use(express.static(publicPath, { index: false }));
 
 // Montar rutas de autenticación Magic Link
 app.use('/api/auth', authRoutes);
