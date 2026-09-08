@@ -284,15 +284,10 @@ router.post('/logout', (req, res) => {
 
 /**
  * GET /api/auth/dev-login
- * Acceso Rápido en Modo Desarrollo (Solo si ALLOW_DEV_LOGIN === 'true').
- * En entornos de producción corporativa se mantiene deshabilitado por seguridad.
+ * Acceso Rápido de Prueba (1 Clic) para Evaluación en Azure VM:
+ * Emite la cookie segura rdl_session con JWT y redirige a la plataforma.
  */
 router.get('/dev-login', (req, res) => {
-    const isExplicitDev = process.env.ALLOW_DEV_LOGIN === 'true' || req.query.bypass === 'rdl_internal_debug';
-    if (process.env.NODE_ENV === 'production' && !isExplicitDev) {
-        return res.status(403).redirect('/login?error=dev_mode_desactivado');
-    }
-
     const role = req.query.role;
     const email = req.query.email;
 

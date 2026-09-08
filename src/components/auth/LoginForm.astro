@@ -163,11 +163,11 @@
             </button>
         </div>
 
-        <!-- Acceso Rápido de Prueba (Dev Mode - Oculto por defecto, visible solo con ?dev=true) -->
-        <div class="dev-mode-card hidden" id="dev-quick-access-box" style="margin-top: 20px;">
+        <!-- Acceso Rápido de Prueba (1 Clic) para Evaluación en Azure VM -->
+        <div class="dev-mode-card" id="dev-quick-access-box" style="margin-top: 22px;">
             <div class="dev-mode-header">
-                <span class="dev-mode-badge">⚡ ACCESO RÁPIDO CON 1 CLIC (MODO DEV)</span>
-                <span class="dev-mode-subtitle">Visible únicamente para pruebas de desarrollo:</span>
+                <span class="dev-mode-badge">⚡ VERSIÓN DE TEST EN AZURE (ACCESO 1 CLIC)</span>
+                <span class="dev-mode-subtitle">Selecciona un perfil corporativo para probar la plataforma:</span>
             </div>
             
             <div class="dev-buttons-stack">
@@ -702,9 +702,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Modo desarrollador: solo visible si se pasa ?dev=true en la URL
-    const isDevMode = urlParams.get('dev') === 'true' || urlParams.get('dev') === '1';
-    if (isDevMode && devQuickBox) {
+    // Modo de evaluación y test activo para la VM de Azure
+    const isDevMode = true;
+    if (devQuickBox) {
         devQuickBox.classList.remove('hidden');
     }
 
