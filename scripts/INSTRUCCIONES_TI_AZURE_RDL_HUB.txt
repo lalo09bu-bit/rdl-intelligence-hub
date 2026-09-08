@@ -1,0 +1,161 @@
+﻿================================================================================
+INSTRUCCIONES TÉCNICAS PARA EL EQUIPO DE TI / SYSADMIN
+DESPLIEGUE DE RDL INTELLIGENCE HUB EN MÁQUINA VIRTUAL DE AZURE (WINDOWS)
+================================================================================
+
+PROYECTO:       RDL Intelligence Hub (Versión de Pruebas / Evaluación)
+ARQUITECTURA:   Node.js (Express) + Frontend Astro precompilado + Base de Datos SQLite integrada
+PUERTO:         9060 TCP (HTTP)
+PERSISTENCIA:   24/7 (Debe operar en segundo plano sin depender de sesiones RDP activas)
+REPOSITORIO:    https://github.com/lalo09bu-bit/rdl-intelligence-hub.git (Rama: main)
+
+--------------------------------------------------------------------------------
+RESUMEN EJECUTIVO PARA TI:
+El sistema es una aplicación web ligera autónoma. No requiere base de datos
+externa (usa SQLite embebido). Para que los directivos y colaboradores puedan
+acceder desde sus computadoras y celulares, TI requiere realizar 2 tareas sencillas:
+  1. Habilitar el puerto 9060 TCP en el NSG de Azure (Portal de Azure).
+  2. Desplegar la app en la VM y registrarla como servicio persistente 24/7.
+--------------------------------------------------------------------------------
+
+
+================================================================================
+PASO 1: HABILITAR PUERTO EN EL PORTAL DE AZURE (NSG - NETWORK SECURITY GROUP)
+================================================================================
+Por política de seguridad predeterminada de Azure, todo puerto que no sea 3389 (RDP)
+está bloqueado hacia el exterior. Se debe abrir el puerto 9060:
+
+1. Iniciar sesión en https://portal.azure.com con credenciales de administrador.
+2. Navegar a: Máquinas Virtuales (Virtual Machines) -> Seleccionar la VM de destino.
+3. En el menú lateral izquierdo, ir a:
+   Redes (Networking) -> Reglas de puerto de entrada (Inbound port rules).
+4. Hacer clic en + Agregar regla de puerto de entrada (+ Add inbound security rule)
+   y configurar:
+   - Origen (Source):                     Any (o la IP corporativa si aplica restricción)
+   - Intervalos de puertos de origen:     *
+   - Destino (Destination):               Any
+   - Servicio (Service):                  Custom
+   - Intervalos de puertos de destino:    9060
+   - Protocolo (Protocol):                TCP
+   - Acción (Action):                     Allow (Permitir)
+   - Prioridad (Priority):                310 (o cualquier número disponible menor a 4000)
+   - Nombre (Name):                       Allow_RDL_Hub_Port_9060
+   - Descripción:                         Acceso HTTP a RDL Intelligence Hub
+5. Guardar (Add / Agregar). Toma entre 30 y 60 segundos en propagarse.
+
+
+================================================================================
+PASO 2: REQUISITOS PREVIOS EN LA MÁQUINA VIRTUAL DE AZURE
+================================================================================
+Conectarse por Escritorio Remoto (RDP) a la VM y verificar/instalar:
+
+1. Node.js (Versión 18 o 20 LTS):
+   - Descarga directa: https://nodejs.org/ (Instalador estándar .msi)
+   - Verificar en PowerShell:
+       node -v
+       npm -v
+
+2. Git para Windows (Recomendado):
+   - Descarga directa: https://git-scm.com/download/win
+   - Verificar en PowerShell:
+       git --version
+
+
+================================================================================
+PASO 3: INSTALACIÓN DEL CÓDIGO EN LA VM (OPCIÓN RECOMENDADA VÍA GIT)
+================================================================================
+Abrir PowerShell como Administrador en la VM y ejecutar:
+
+  # 1. Crear carpeta y clonar el repositorio
+  git clone https://github.com/lalo09bu-bit/rdl-intelligence-hub.git C:\RDL_Hub
+
+  # 2. Entrar al directorio e instalar dependencias
+  cd C:\RDL_Hub
+  npm install
+
+  # 3. Compilar el frontend Astro
+  npm run build
+
+NOTA: Si no se desea usar Git, se puede copiar la carpeta del proyecto o el 
+instalador RDL_Intelligence_Hub_Setup.exe directamente a la VM.
+
+
+================================================================================
+PASO 4: CONFIGURACIÓN DEL FIREWALL LOCAL Y SERVICIO PERSISTENTE 24/7
+================================================================================
+Dentro de la carpeta C:\RDL_Hub\scripts se incluyen dos scripts automatizados.
+Ejecutarlos en PowerShell como Administrador:
+
+A) ABRIR FIREWALL DE WINDOWS DEFENDER:
+   powershell -ExecutionPolicy Bypass -File C:\RDL_Hub\scripts\azure-setup-vm.ps1
+
+   * Esto crea la regla local RDL_Intelligence_Hub_Inbound_9060 en Windows Firewall
+     y muestra en pantalla la IP Privada y la IP Pública detectadas de la VM.
+
+B) REGISTRAR EL SERVICIO 24/7 (TASK SCHEDULER DE WINDOWS):
+   powershell -ExecutionPolicy Bypass -File C:\RDL_Hub\scripts\install-windows-service.ps1
+
+   * Este script registra la tarea RDL_Intelligence_Hub_Server en el Programador
+     de Tareas de Windows para ejecutarse bajo la cuenta NT AUTHORITY\SYSTEM al iniciar
+     el sistema (AtStartup).
+   * BENEFICIO CRÍTICO: Garantiza que la app siga corriendo 24/7 aunque el usuario
+     cierre la sesión de Escritorio Remoto (RDP) o la máquina se reinicie por
+     mantenimiento de Azure.
+
+
+================================================================================
+PASO 5: VERIFICACIÓN Y PRUEBAS DE ACCESO
+================================================================================
+
+1. PRUEBA LOCAL DENTRO DE LA VM:
+   Abrir PowerShell o el navegador en la VM y comprobar:
+     Invoke-RestMethod -Uri http://localhost:9060/api/health
+   Debe responder:
+     {status:OK,app:RDL Intelligence Hub,port:9060,...}
+
+2. PRUEBA REMOTA DESDE CUALQUIER OTRA COMPUTADORA O CELULAR:
+   Abrir el navegador e ingresar:
+     http://<IP-PUBLICA-DE-LA-VM>:9060
+     (Ejemplo: http://20.124.50.80:9060)
+
+   * Pantalla esperada: Panel de inicio de sesión de RDL Intelligence Hub.
+   * Cuenta con panel visible VERSIÓN DE TEST EN AZURE (ACCESO 1 CLIC):
+       - Recursos Humanos (rh@rdl.com.mx)
+       - Abogada Sr. (abogada.sr@rdl.com.mx)
+       - Abogada Jr. (abogada.jr@rdl.com.mx)
+   * También permite auto-registro y Magic Link para correos autorizados:
+       @adeltaconsultores.com y @rdlabogados.com.mx
+
+
+================================================================================
+COMANDOS DE ADMINISTRACIÓN Y SOPORTE PARA TI
+================================================================================
+
+- DETENER EL SERVICIO:
+    Stop-ScheduledTask -TaskName RDL_Intelligence_Hub_Server
+
+- INICIAR EL SERVICIO:
+    Start-ScheduledTask -TaskName RDL_Intelligence_Hub_Server
+
+- VER ESTADO DEL SERVICIO:
+    Get-ScheduledTask -TaskName RDL_Intelligence_Hub_Server
+
+- BASE DE DATOS:
+    Ubicada en: C:\RDL_Hub\server\database\hub.db (SQLite)
+    No requiere mantenimiento externo. Para respaldos basta copiar el archivo .db.
+
+- PUERTO PERSONALIZADO (OPCIONAL):
+    Si TI prefiere otro puerto, crear un archivo .env en C:\RDL_Hub con:
+      PORT=80
+    y abrir el puerto correspondiente en el NSG y Firewall.
+
+- DOMINIO PERSONALIZADO O HTTPS (RECOMENDACIÓN AVANZADA DE TI):
+    Se puede configurar un DNS público en Azure (ej. hub.adeltaconsultores.com)
+    apuntando a la IP pública de la VM, o poner IIS / Nginx como Reverse Proxy con
+    certificado SSL Let's Encrypt / Certificado Corporativo en el puerto 443.
+
+================================================================================
+CONTACTO Y DUDAS:
+El proyecto ya cuenta con todas las pruebas unitarias y de integración validadas.
+En caso de dudas con la configuración de red, revisar scripts\azure-vm-guide.md.
+================================================================================
