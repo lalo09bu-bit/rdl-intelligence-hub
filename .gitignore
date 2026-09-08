@@ -24,6 +24,7 @@ bin/
 OutputInstaller/
 *.log
 npm-debug.log*
+subir_a_github.bat
 
 # AI Agent metadata
 .agent/

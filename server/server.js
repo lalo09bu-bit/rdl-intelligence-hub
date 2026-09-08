@@ -33,7 +33,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 const distPath = path.join(__dirname, '..', 'dist');
 const publicPath = path.join(__dirname, '..', 'public');
 
-app.use(express.static(distPath));
+app.use(express.static(distPath, { index: false }));
 app.use(express.static(publicPath));
 
 // Montar rutas de autenticación Magic Link

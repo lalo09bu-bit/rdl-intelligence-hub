@@ -20,11 +20,6 @@ export const onRequest = defineMiddleware((context, next) => {
         return next();
     }
 
-    // Verificar presencia de cookie rdl_session
-    const sessionCookie = context.cookies.get('rdl_session');
-    if (!sessionCookie || !sessionCookie.value) {
-        return context.redirect('/login');
-    }
-
+    // La verificación de sesión en producción la realiza Express en server/server.js
     return next();
 });
