@@ -320,21 +320,11 @@ app.post('/api/usuarios', (req, res) => {
     });
 });
 
+// Endpoint legacy /api/login deshabilitado por seguridad corporativa
 app.post('/api/login', (req, res) => {
-    const { rol, email } = req.body;
-    let query = 'SELECT *, (dias_vacaciones_totales - dias_vacaciones_tomados) as dias_vacaciones_restantes FROM usuarios WHERE rol = ? LIMIT 1';
-    let params = [rol];
-
-    if (email) {
-        query = 'SELECT *, (dias_vacaciones_totales - dias_vacaciones_tomados) as dias_vacaciones_restantes FROM usuarios WHERE email = ? LIMIT 1';
-        params = [email];
-    }
-
-    db.get(query, params, (err, usuario) => {
-        if (err || !usuario) {
-            return res.status(404).json({ error: 'Usuario no encontrado para este rol o correo' });
-        }
-        res.json({ success: true, user: usuario });
+    return res.status(403).json({
+        success: false,
+        error: 'El inicio de sesión directo ha sido reemplazado por la autenticación segura sin contraseña vía Magic Link institucional.'
     });
 });
 

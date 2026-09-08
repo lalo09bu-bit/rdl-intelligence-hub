@@ -18,14 +18,13 @@ console.log('===================================================================
 console.log('🖥️ COMPILANDO ASISTENTE GRÁFICO (GUI WIZARD) .EXE DE RDL HUB');
 console.log('========================================================================\n');
 
-// 1. Crear el Zip comprimido del paquete de la app
-if (!fs.existsSync(tempZip)) {
-    console.log('⚡ [1/3] Comprimiendo la plataforma RDL en paquete ZIP...');
-    const psZipCmd = `powershell -Command "Compress-Archive -Path '${pkgDir.replace(/\\/g, '\\\\')}\\*' -DestinationPath '${tempZip.replace(/\\/g, '\\\\')}' -Force"`;
-    execSync(psZipCmd, { cwd: projectDir });
-} else {
-    console.log('⚡ [1/3] Paquete ZIP detectado listo.');
+// 1. Siempre recrear el Zip comprimido para garantizar la versión más reciente
+if (fs.existsSync(tempZip)) {
+    try { fs.unlinkSync(tempZip); } catch {}
 }
+console.log('⚡ [1/3] Comprimiendo la plataforma RDL actualizada en paquete ZIP...');
+const psZipCmd = `powershell -Command "Compress-Archive -Path '${pkgDir.replace(/\\/g, '\\\\')}\\*' -DestinationPath '${tempZip.replace(/\\/g, '\\\\')}' -Force"`;
+execSync(psZipCmd, { cwd: projectDir });
 
 // 2. Preparar el código C# WinForms GUI Wizard con recurso binario incrustado
 console.log('⚙️ [2/3] Generando código fuente C# WinForms con recurso embebido...');

@@ -25,10 +25,26 @@
             <span id="login-info-text"></span>
         </div>
 
-        <!-- Formulario de Solicitud de Magic Link -->
+        <!-- Insignia Corporativa de Dominios Autorizados -->
+        <div class="domains-badge">
+            <span class="badge-icon">🛡️</span>
+            <span>Acceso seguro exclusivo: <strong>@adeltaconsultores.com</strong> y <strong>@rdlabogados.com.mx</strong></span>
+        </div>
+
+        <!-- Selector de Pestañas: Iniciar Sesión vs Crear Perfil -->
+        <div class="auth-tabs" id="auth-tabs-nav">
+            <button type="button" class="auth-tab-btn active" id="tab-btn-login">
+                🔑 Iniciar Sesión
+            </button>
+            <button type="button" class="auth-tab-btn" id="tab-btn-register">
+                📝 Crear Perfil
+            </button>
+        </div>
+
+        <!-- 1. Formulario de Solicitud de Magic Link (Inicio de Sesión) -->
         <form id="magic-link-form" class="login-form">
             <div class="form-group">
-                <label for="email-input" class="form-label">Correo Institucional RDL</label>
+                <label for="email-input" class="form-label">Correo Institucional Autorizado</label>
                 <div class="input-with-icon">
                     <span class="input-icon">✉️</span>
                     <input 
@@ -36,12 +52,12 @@
                         id="email-input" 
                         name="email" 
                         required 
-                        placeholder="tu.correo@rdl.com.mx" 
+                        placeholder="tu.nombre@adeltaconsultores.com" 
                         class="form-input" 
                         autocomplete="email"
                     />
                 </div>
-                <span class="form-hint">Te enviaremos un enlace de acceso seguro a tu bandeja de entrada.</span>
+                <span class="form-hint">Te enviaremos un enlace de acceso seguro a tu bandeja de Outlook. Sin contraseñas.</span>
             </div>
 
             <button type="submit" id="btn-submit-magic" class="btn-primary-login">
@@ -50,64 +66,93 @@
             </button>
         </form>
 
-        <!-- Acceso Rápido de Prueba (Dev Mode) -->
-        <div class="divider">
-            <span>o acceso rápido de prueba (dev mode)</span>
-        </div>
-
-        <div class="dev-mode-card" id="dev-quick-access-box">
-            <div class="dev-mode-header">
-                <span class="dev-mode-badge">⚡ ACCESO RÁPIDO CON 1 CLIC</span>
-                <span class="dev-mode-subtitle">Evalúa permisos y perfiles sin correo:</span>
+        <!-- 2. Formulario de Auto-Registro de Nuevo Colaborador -->
+        <form id="register-form" class="login-form hidden">
+            <div class="form-group">
+                <label for="reg-nombre" class="form-label">Nombre Completo</label>
+                <div class="input-with-icon">
+                    <span class="input-icon">👤</span>
+                    <input 
+                        type="text" 
+                        id="reg-nombre" 
+                        required 
+                        placeholder="Ej: Lic. Claudia Ruiz" 
+                        class="form-input"
+                    />
+                </div>
             </div>
-            
-            <div class="dev-buttons-stack">
-                <a href="/api/auth/dev-login?role=RH" class="btn-dev-login role-rh" title="Acceso total a Dirección de Talento">
-                    <span class="role-icon">👑</span>
-                    <div class="role-meta">
-                        <span class="role-name">Entrar como RH / Admin</span>
-                        <span class="role-user">Lic. Andrés Cosmes (rh@rdl.com.mx)</span>
-                    </div>
-                    <span class="role-badge">Admin</span>
-                </a>
 
-                <a href="/api/auth/dev-login?role=ABOGADA_SR" class="btn-dev-login role-sr" title="Supervisión legal y dictámenes">
-                    <span class="role-icon">⚖️</span>
-                    <div class="role-meta">
-                        <span class="role-name">Entrar como Abogada Sr</span>
-                        <span class="role-user">Lic. Valeria Mendoza (valeria.mendoza@rdl.com.mx)</span>
-                    </div>
-                    <span class="role-badge">Senior</span>
-                </a>
-
-                <a href="/api/auth/dev-login?role=ABOGADA_JR" class="btn-dev-login role-jr" title="Avance de expedientes y metas">
-                    <span class="role-icon">💼</span>
-                    <div class="role-meta">
-                        <span class="role-name">Entrar como Abogada Jr</span>
-                        <span class="role-user">Lic. Ana Martínez (ana.martinez@rdl.com.mx)</span>
-                    </div>
-                    <span class="role-badge">Junior</span>
-                </a>
+            <div class="form-group">
+                <label for="reg-email" class="form-label">Correo Institucional</label>
+                <div class="input-with-icon">
+                    <span class="input-icon">✉️</span>
+                    <input 
+                        type="email" 
+                        id="reg-email" 
+                        required 
+                        placeholder="claudia.ruiz@adeltaconsultores.com" 
+                        class="form-input" 
+                        autocomplete="email"
+                    />
+                </div>
+                <span class="form-hint">Debe pertenecer a @adeltaconsultores.com o @rdlabogados.com.mx</span>
             </div>
-        </div>
+
+            <div class="form-row-2">
+                <div class="form-group">
+                    <label for="reg-puesto" class="form-label">Puesto / Cargo</label>
+                    <input 
+                        type="text" 
+                        id="reg-puesto" 
+                        required 
+                        placeholder="Ej: Abogada Consultora" 
+                        class="form-input"
+                    />
+                </div>
+                <div class="form-group">
+                    <label for="reg-depto" class="form-label">Departamento</label>
+                    <input 
+                        type="text" 
+                        id="reg-depto" 
+                        required 
+                        placeholder="Ej: Legal / Consultoría" 
+                        class="form-input"
+                    />
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="reg-tel" class="form-label">Teléfono Corporativo (Opcional)</label>
+                <input 
+                    type="tel" 
+                    id="reg-tel" 
+                    placeholder="+52 (55) 5482-9000" 
+                    class="form-input"
+                />
+            </div>
+
+            <button type="submit" id="btn-submit-register" class="btn-primary-login" style="background-color: #136a60;">
+                <span id="btn-reg-text">Crear Perfil y Enviar Enlace</span>
+                <div id="btn-reg-spinner" class="spinner hidden"></div>
+            </button>
+        </form>
 
         <!-- Pantalla de Éxito al Enviar Magic Link -->
         <div id="magic-success-screen" class="success-screen hidden">
             <div class="success-icon-wrap">
                 <span class="success-check">✓</span>
             </div>
-            <h2 class="success-title">¡Enlace Mágico Generado!</h2>
+            <h2 class="success-title" id="success-title">¡Enlace de Acceso Generado!</h2>
             <p class="success-desc">
                 Se ha generado el enlace para <strong id="sent-email-display">tu dirección institucional</strong>.
             </p>
             <div class="success-notice">
-                ⏱️ Este enlace es de un solo uso y expirará en <strong>15 minutos</strong>.<br><br>
-                💡 <em>En modo desarrollo sin API de Resend, el enlace se imprime resaltado directamente en la consola/terminal:</em><br>
-                <code>🔗 [DEV LINK] Clic aquí para iniciar sesión:...</code>
+                ⏱️ Este enlace es personal, de un solo uso y expirará en <strong>15 minutos</strong>.<br><br>
+                📩 Revisa tu buzón de <strong>Outlook</strong> y haz clic en el enlace para ingresar de inmediato.
             </div>
 
-            <!-- Botón de Acceso Directo Local en Modo Dev -->
-            <div style="margin-bottom: 16px;">
+            <!-- Botón de Acceso Directo Local en Modo Dev (Solo visible si dev=true) -->
+            <div id="dev-direct-box" class="hidden" style="margin-bottom: 16px;">
                 <a id="btn-dev-direct-login" href="#" class="btn-primary-login" style="text-decoration: none; font-size: 13px; padding: 11px 16px; background-color: #136a60;">
                     🚀 Ingresar Directamente a la Plataforma (Dev Mode) →
                 </a>
@@ -116,6 +161,43 @@
             <button type="button" id="btn-retry-login" class="btn-link-action">
                 ← Solicitar otro enlace
             </button>
+        </div>
+
+        <!-- Acceso Rápido de Prueba (Dev Mode - Oculto por defecto, visible solo con ?dev=true) -->
+        <div class="dev-mode-card hidden" id="dev-quick-access-box" style="margin-top: 20px;">
+            <div class="dev-mode-header">
+                <span class="dev-mode-badge">⚡ ACCESO RÁPIDO CON 1 CLIC (MODO DEV)</span>
+                <span class="dev-mode-subtitle">Visible únicamente para pruebas de desarrollo:</span>
+            </div>
+            
+            <div class="dev-buttons-stack">
+                <a href="/api/auth/dev-login?role=RH&bypass=rdl_internal_debug" class="btn-dev-login role-rh" title="Acceso total a Dirección de Talento">
+                    <span class="role-icon">👑</span>
+                    <div class="role-meta">
+                        <span class="role-name">Entrar como RH / Admin</span>
+                        <span class="role-user">Lic. Andrés Cosmes (rh@rdl.com.mx)</span>
+                    </div>
+                    <span class="role-badge">Admin</span>
+                </a>
+
+                <a href="/api/auth/dev-login?role=ABOGADA_SR&bypass=rdl_internal_debug" class="btn-dev-login role-sr" title="Supervisión legal y dictámenes">
+                    <span class="role-icon">⚖️</span>
+                    <div class="role-meta">
+                        <span class="role-name">Entrar como Abogada Sr</span>
+                        <span class="role-user">Lic. Valeria Mendoza (valeria.mendoza@rdl.com.mx)</span>
+                    </div>
+                    <span class="role-badge">Senior</span>
+                </a>
+
+                <a href="/api/auth/dev-login?role=ABOGADA_JR&bypass=rdl_internal_debug" class="btn-dev-login role-jr" title="Avance de expedientes y metas">
+                    <span class="role-icon">💼</span>
+                    <div class="role-meta">
+                        <span class="role-name">Entrar como Abogada Jr</span>
+                        <span class="role-user">Lic. Ana Martínez (ana.martinez@rdl.com.mx)</span>
+                    </div>
+                    <span class="role-badge">Junior</span>
+                </a>
+            </div>
         </div>
 
         <!-- Pie de tarjeta corporativo -->
@@ -210,6 +292,60 @@
         background-color: #f0fdfa;
         border: 1px solid #ccfbf1;
         color: #115e59;
+    }
+
+    .domains-badge {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: #f8fafc;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 9px 12px;
+        font-size: 11.5px;
+        color: #334155;
+        margin-bottom: 18px;
+        text-align: center;
+        line-height: 1.4;
+    }
+
+    .domains-badge strong {
+        color: #0f2d4a;
+    }
+
+    .auth-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        background: #f1f5f9;
+        padding: 4px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    .auth-tab-btn {
+        padding: 10px 14px;
+        border: none;
+        background: transparent;
+        color: #64748b;
+        font-size: 13px;
+        font-weight: 600;
+        border-radius: 7px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .auth-tab-btn.active {
+        background: #ffffff;
+        color: #0f2d4a;
+        box-shadow: 0 2px 6px rgba(15, 45, 74, 0.08);
+    }
+
+    .form-row-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
     }
 
     .form-group {
@@ -508,19 +644,48 @@
 
 <script is:inline>
 document.addEventListener('DOMContentLoaded', () => {
-    const form = document.getElementById('magic-link-form');
+    // Dominios institucionales autorizados
+    const ALLOWED_DOMAINS = ['adeltaconsultores.com', 'adeltaconsultore.com', 'rdlabogados.com.mx', 'rdl.com.mx'];
+
+    function isDomainAllowed(email) {
+        if (!email || !email.includes('@')) return false;
+        const domain = email.split('@').pop().trim().toLowerCase();
+        return ALLOWED_DOMAINS.includes(domain);
+    }
+
+    // Elementos DOM
+    const tabBtnLogin = document.getElementById('tab-btn-login');
+    const tabBtnRegister = document.getElementById('tab-btn-register');
+    const formLogin = document.getElementById('magic-link-form');
+    const formRegister = document.getElementById('register-form');
+
     const emailInput = document.getElementById('email-input');
     const submitBtn = document.getElementById('btn-submit-magic');
     const btnText = document.getElementById('btn-text');
     const btnSpinner = document.getElementById('btn-spinner');
+
+    const regNombre = document.getElementById('reg-nombre');
+    const regEmail = document.getElementById('reg-email');
+    const regPuesto = document.getElementById('reg-puesto');
+    const regDepto = document.getElementById('reg-depto');
+    const regTel = document.getElementById('reg-tel');
+    const submitRegBtn = document.getElementById('btn-submit-register');
+    const btnRegText = document.getElementById('btn-reg-text');
+    const btnRegSpinner = document.getElementById('btn-reg-spinner');
+
     const errorBanner = document.getElementById('login-error-banner');
     const errorText = document.getElementById('login-error-text');
+    const infoBanner = document.getElementById('login-info-banner');
+    const infoText = document.getElementById('login-info-text');
+
     const successScreen = document.getElementById('magic-success-screen');
+    const successTitle = document.getElementById('success-title');
     const sentEmailDisplay = document.getElementById('sent-email-display');
     const retryBtn = document.getElementById('btn-retry-login');
-    const quickRhBtn = document.getElementById('btn-quick-rh');
+    const devQuickBox = document.getElementById('dev-quick-access-box');
+    const devDirectBox = document.getElementById('dev-direct-box');
 
-    // Revisar si la URL contiene errores (ej. token expirado)
+    // Revisar si la URL contiene errores o modo dev
     const urlParams = new URLSearchParams(window.location.search);
     const errorParam = urlParams.get('error');
 
@@ -530,35 +695,66 @@ document.addEventListener('DOMContentLoaded', () => {
             errorText.textContent = 'El enlace de acceso ya fue utilizado o ha expirado (15 minutos). Por favor solicita uno nuevo.';
         } else if (errorParam === 'sesion_expirada') {
             errorText.textContent = 'Tu sesión ha finalizado. Por favor ingresa nuevamente con tu correo.';
+        } else if (errorParam === 'dev_mode_desactivado') {
+            errorText.textContent = 'El acceso rápido de prueba se encuentra deshabilitado en este entorno de producción.';
         } else {
-            errorText.textContent = 'Ocurrió un error al verificar tu acceso. Por favor intenta de nuevo.';
+            errorText.textContent = 'Ocurrió un detalle al verificar tu acceso institucional. Por favor intenta de nuevo.';
         }
     }
 
-    // Botón de prueba rápida con cuenta de RH
-    if (quickRhBtn) {
-        quickRhBtn.addEventListener('click', () => {
-            emailInput.value = 'rh@rdl.com.mx';
-            emailInput.focus();
-        });
+    // Modo desarrollador: solo visible si se pasa ?dev=true en la URL
+    const isDevMode = urlParams.get('dev') === 'true' || urlParams.get('dev') === '1';
+    if (isDevMode && devQuickBox) {
+        devQuickBox.classList.remove('hidden');
     }
 
-    // Manejar envío del formulario de Magic Link
-    if (form) {
-        form.addEventListener('submit', async (e) => {
+    // Gestión de pestañas (Login vs Registro)
+    function switchTab(tab) {
+        errorBanner.classList.add('hidden');
+        infoBanner.classList.add('hidden');
+
+        if (tab === 'login') {
+            tabBtnLogin.classList.add('active');
+            tabBtnRegister.classList.remove('active');
+            formLogin.classList.remove('hidden');
+            formRegister.classList.add('hidden');
+            emailInput.focus();
+        } else {
+            tabBtnLogin.classList.remove('active');
+            tabBtnRegister.classList.add('active');
+            formLogin.classList.add('hidden');
+            formRegister.classList.remove('hidden');
+            regNombre.focus();
+        }
+    }
+
+    if (tabBtnLogin) tabBtnLogin.addEventListener('click', () => switchTab('login'));
+    if (tabBtnRegister) tabBtnRegister.addEventListener('click', () => switchTab('register'));
+
+    // 1. Manejo del Formulario de Inicio de Sesión (Magic Link)
+    if (formLogin) {
+        formLogin.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = emailInput.value.trim();
+            const email = emailInput.value.trim().toLowerCase();
 
             if (!email) return;
+
+            // Validación de dominio en cliente
+            if (!isDomainAllowed(email)) {
+                errorBanner.classList.remove('hidden');
+                infoBanner.classList.add('hidden');
+                errorText.textContent = 'Acceso no autorizado. Solo se permiten correos institucionales de @adeltaconsultores.com y @rdlabogados.com.mx.';
+                return;
+            }
 
             // Estado de carga
             submitBtn.disabled = true;
             btnText.textContent = 'Enviando enlace seguro...';
             btnSpinner.classList.remove('hidden');
             errorBanner.classList.add('hidden');
+            infoBanner.classList.add('hidden');
 
             try {
-                // Se utiliza ruta relativa estricta (regla: sin localhost quemado)
                 const res = await fetch('/api/auth/magic-link', {
                     method: 'POST',
                     headers: {
@@ -571,15 +767,26 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await res.json();
 
                 if (res.ok && data.success) {
-                    // Mostrar pantalla de confirmación exitosa
+                    // Si el correo está autorizado pero aún no está registrado
+                    if (data.registered === false) {
+                        infoBanner.classList.remove('hidden');
+                        infoText.textContent = 'Tu correo está autorizado pero aún no tienes perfil creado. Por favor completa tus datos para registrarte.';
+                        regEmail.value = email;
+                        switchTab('register');
+                        return;
+                    }
+
+                    // Si ya está registrado y se envió el enlace
                     sentEmailDisplay.textContent = email;
-                    form.classList.add('hidden');
-                    document.querySelector('.divider')?.classList.add('hidden');
-                    document.getElementById('dev-quick-access-box')?.classList.add('hidden');
-                    
-                    const directDevBtn = document.getElementById('btn-dev-direct-login');
-                    if (directDevBtn) {
-                        directDevBtn.href = `/api/auth/dev-login?email=${encodeURIComponent(email)}`;
+                    successTitle.textContent = '¡Enlace de Acceso Generado!';
+                    formLogin.classList.add('hidden');
+                    formRegister.classList.add('hidden');
+                    document.getElementById('auth-tabs-nav')?.classList.add('hidden');
+
+                    if (isDevMode && devDirectBox) {
+                        devDirectBox.classList.remove('hidden');
+                        const directBtn = document.getElementById('btn-dev-direct-login');
+                        if (directBtn) directBtn.href = `/api/auth/dev-login?email=${encodeURIComponent(email)}&bypass=rdl_internal_debug`;
                     }
 
                     successScreen.classList.remove('hidden');
@@ -608,19 +815,95 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Botón para reintentar / solicitar otro enlace
+    // 2. Manejo del Formulario de Registro de Colaborador
+    if (formRegister) {
+        formRegister.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nombre = regNombre.value.trim();
+            const email = regEmail.value.trim().toLowerCase();
+            const puesto = regPuesto.value.trim();
+            const departamento = regDepto.value.trim();
+            const telefono = regTel.value.trim();
+
+            if (!nombre || !email) return;
+
+            // Validación de dominio en cliente
+            if (!isDomainAllowed(email)) {
+                errorBanner.classList.remove('hidden');
+                infoBanner.classList.add('hidden');
+                errorText.textContent = 'Dominio no autorizado. Solo se permite el registro con cuentas @adeltaconsultores.com o @rdlabogados.com.mx.';
+                return;
+            }
+
+            submitRegBtn.disabled = true;
+            btnRegText.textContent = 'Registrando y enviando enlace...';
+            btnRegSpinner.classList.remove('hidden');
+            errorBanner.classList.add('hidden');
+            infoBanner.classList.add('hidden');
+
+            try {
+                const res = await fetch('/api/auth/register-magic', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ nombre, email, puesto, departamento, telefono })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    sentEmailDisplay.textContent = email;
+                    successTitle.textContent = '¡Perfil Creado y Enlace Enviado!';
+                    formLogin.classList.add('hidden');
+                    formRegister.classList.add('hidden');
+                    document.getElementById('auth-tabs-nav')?.classList.add('hidden');
+
+                    if (isDevMode && devDirectBox) {
+                        devDirectBox.classList.remove('hidden');
+                        const directBtn = document.getElementById('btn-dev-direct-login');
+                        if (directBtn) directBtn.href = `/api/auth/dev-login?email=${encodeURIComponent(email)}&bypass=rdl_internal_debug`;
+                    }
+
+                    successScreen.classList.remove('hidden');
+
+                    if (typeof gsap !== 'undefined') {
+                        gsap.from('#magic-success-screen', {
+                            opacity: 0,
+                            y: 15,
+                            duration: 0.4,
+                            ease: 'power2.out'
+                        });
+                    }
+                } else {
+                    errorBanner.classList.remove('hidden');
+                    errorText.textContent = data.error || 'No fue posible registrar tu perfil. Por favor intenta de nuevo.';
+                }
+            } catch (err) {
+                console.error('Error de red al registrar colaborador:', err);
+                errorBanner.classList.remove('hidden');
+                errorText.textContent = 'Error de conexión con el servidor.';
+            } finally {
+                submitRegBtn.disabled = false;
+                btnRegText.textContent = 'Crear Perfil y Enviar Enlace';
+                btnRegSpinner.classList.add('hidden');
+            }
+        });
+    }
+
+    // Botón para reintentar / volver
     if (retryBtn) {
         retryBtn.addEventListener('click', () => {
             successScreen.classList.add('hidden');
-            form.classList.remove('hidden');
-            document.querySelector('.divider')?.classList.remove('hidden');
-            document.getElementById('dev-quick-access-box')?.classList.remove('hidden');
+            document.getElementById('auth-tabs-nav')?.classList.remove('hidden');
+            switchTab('login');
             emailInput.value = '';
             emailInput.focus();
         });
     }
 
-    // Animación de entrada suave con GSAP
+    // Animación de entrada con GSAP
     if (typeof gsap !== 'undefined') {
         gsap.from('#login-card-container', {
             opacity: 0,

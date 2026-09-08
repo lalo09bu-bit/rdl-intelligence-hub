@@ -6,10 +6,11 @@
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🚀 Iniciando RDL Intelligence Hub...');
     
-    // Iniciar Animación de Carga Splash Screen
-    runSplashScreenAnimation(() => {
-        // Al terminar el Splash, mostrar Pantalla de Login
-        document.getElementById('login-modal').classList.add('active');
+    // Iniciar Animación de Carga Splash Screen y verificar sesión segura
+    runSplashScreenAnimation(async () => {
+        if (window.loginMod) {
+            await window.loginMod.verificarSesionActiva();
+        }
     });
 });
 
@@ -58,7 +59,7 @@ function runSplashScreenAnimation(onCompleteCallback) {
 }
 
 /**
- * Controlador de Inicio de Sesión y Gestión de Permisos por Rol
+ * Controlador de Inicio de Sesión y Verificación de Sesión Activa
  */
 class LoginModule {
     constructor() {
@@ -67,69 +68,38 @@ class LoginModule {
     }
 
     init() {
-        this.loadUsers();
-        
         // Escuchar nuevo usuario remoto vía Socket.io
-        window.addEventListener('rdl_usuario_creado', (e) => {
+        window.addEventListener('rdl_usuario_creado', () => {
             this.loadUsers();
         });
+    }
 
-        // Formulario de creación de usuario
-        document.getElementById('form-create-user')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const nombre = document.getElementById('nu-nombre').value.trim();
-            const rol = document.getElementById('nu-rol').value;
-            const puesto = document.getElementById('nu-puesto').value.trim();
-            const email = document.getElementById('nu-email').value.trim();
-            const dias_vacaciones_totales = parseInt(document.getElementById('nu-vacaciones').value, 10) || 12;
+    /**
+     * Verifica que el usuario tenga una sesión HTTP-Only activa válida con JWT.
+     * Si no la tiene, lo redirige inmediatamente a /login.
+     */
+    async verificarSesionActiva() {
+        try {
+            const res = await fetch('/api/auth/me', {
+                headers: { 'Accept': 'application/json' }
+            });
 
-            try {
-                const res = await fetch('/api/usuarios', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ nombre, rol, puesto, email, dias_vacaciones_totales })
-                });
-
+            if (res.ok) {
                 const data = await res.json();
-                if (data.success) {
-                    document.getElementById('modal-create-user').classList.remove('active');
-                    e.target.reset();
-                    window.currentUser = data.data;
-                    this.onLoginSuccess(data.data);
-                } else {
-                    alert(data.error || 'Error al crear perfil');
+                if (data.success && data.user) {
+                    window.currentUser = data.user;
+                    this.onLoginSuccess(data.user);
+                    return;
                 }
-            } catch (err) {
-                console.error('Error al crear perfil:', err);
             }
-        });
-    }
 
-    switchTab(tab) {
-        const btnProfiles = document.getElementById('tab-btn-profiles');
-        const btnEmail = document.getElementById('tab-btn-email');
-        const viewProfiles = document.getElementById('login-profiles-view');
-        const viewEmail = document.getElementById('login-email-view');
-
-        if (tab === 'profiles') {
-            if (btnProfiles) btnProfiles.classList.add('active');
-            if (btnEmail) btnEmail.classList.remove('active');
-            if (viewProfiles) viewProfiles.classList.remove('hidden');
-            if (viewEmail) viewEmail.classList.add('hidden');
-        } else {
-            if (btnProfiles) btnProfiles.classList.remove('active');
-            if (btnEmail) btnEmail.classList.add('active');
-            if (viewProfiles) viewProfiles.classList.add('hidden');
-            if (viewEmail) viewEmail.classList.remove('hidden');
+            // Si no hay sesión válida, redirigir a /login
+            console.warn('⚠️ Sesión no detectada o expirada. Redirigiendo a pantalla de acceso institucional...');
+            window.location.href = '/login';
+        } catch (err) {
+            console.error('Error al verificar sesión activa:', err);
+            window.location.href = '/login';
         }
-    }
-
-    async handleEmailLogin(e) {
-        e.preventDefault();
-        const email = document.getElementById('login-input-email').value.trim();
-        if (!email) return;
-
-        await this.selectUserByEmail(email);
     }
 
     async loadUsers() {
@@ -138,74 +108,9 @@ class LoginModule {
             const data = await res.json();
             if (data.success && data.data) {
                 this.users = data.data;
-                this.renderRolesGrid(data.data);
             }
         } catch (err) {
             console.error('Error cargando usuarios:', err);
-        }
-    }
-
-    renderRolesGrid(users) {
-        const container = document.getElementById('roles-container');
-        if (!container) return;
-
-        container.innerHTML = users.map(user => {
-            let badgeClass = 'badge-jr';
-            let roleLabel = 'Abogada JR';
-            if (user.rol === 'RH' || user.rol === 'ADMIN_RH') { badgeClass = 'badge-rh'; roleLabel = 'Recursos Humanos (RH)'; }
-            else if (user.rol === 'ADMIN') { badgeClass = 'badge-admin'; roleLabel = 'Administrador'; }
-            else if (user.rol === 'ABOGADA_SR') { badgeClass = 'badge-sr'; roleLabel = 'Abogada SR'; }
-
-            const initials = user.avatar || user.nombre.split(' ').map(n => n[0]).join('').substring(0, 2);
-
-            return `
-                <div class="role-card" onclick="loginMod.selectUserByEmail('${user.email}')">
-                    <div class="role-avatar ${user.rol.toLowerCase()}-avatar">${initials}</div>
-                    <div class="role-info">
-                        <h3>${user.nombre}</h3>
-                        <span class="role-badge ${badgeClass}">${roleLabel}</span>
-                        <p class="role-desc">${user.puesto} - ${user.departamento || 'RDL'}</p>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    async selectUserByEmail(email) {
-        try {
-            const res = await fetch('/api/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email })
-            });
-
-            const data = await res.json();
-            if (data.success) {
-                window.currentUser = data.user;
-                this.onLoginSuccess(data.user);
-            } else {
-                alert(data.error || 'Correo electrónico no encontrado en el sistema.');
-            }
-        } catch (err) {
-            console.error('Error al iniciar sesión:', err);
-        }
-    }
-
-    async selectRole(rolName) {
-        try {
-            const res = await fetch('/api/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ rol: rolName })
-            });
-
-            const data = await res.json();
-            if (data.success) {
-                window.currentUser = data.user;
-                this.onLoginSuccess(data.user);
-            }
-        } catch (err) {
-            console.error('Error al iniciar sesión:', err);
         }
     }
 
