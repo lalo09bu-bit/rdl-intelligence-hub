@@ -1,10 +1,12 @@
 /**
  * RDL Intelligence Hub - Muro Corporativo Estilo Facebook
+ * Soporte para comunicados con imágenes adjuntas, drag & drop, copiado/pegado y zoom en lightbox.
  */
 
 class FeedModule {
     constructor() {
         this.posts = [];
+        this.currentImageBase64 = null;
         this.init();
     }
 
@@ -28,6 +30,145 @@ class FeedModule {
                 this.submitPost();
             });
         }
+
+        // 1. Selector de imagen para el comunicado
+        const btnAttach = document.getElementById('btn-trigger-post-image');
+        const fileInput = document.getElementById('post-imagen-input');
+        const btnRemove = document.getElementById('btn-remove-post-image');
+
+        if (btnAttach && fileInput) {
+            btnAttach.addEventListener('click', () => fileInput.click());
+        }
+
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) this.processImageFile(file);
+            });
+        }
+
+        if (btnRemove) {
+            btnRemove.addEventListener('click', () => this.clearImage());
+        }
+
+        // 2. Drag & Drop de imagen sobre el compositor
+        const composerCard = document.getElementById('post-composer-card');
+        if (composerCard) {
+            composerCard.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                composerCard.classList.add('drag-active');
+            });
+            composerCard.addEventListener('dragleave', () => {
+                composerCard.classList.remove('drag-active');
+            });
+            composerCard.addEventListener('drop', (e) => {
+                e.preventDefault();
+                composerCard.classList.remove('drag-active');
+                const file = e.dataTransfer.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    this.processImageFile(file);
+                }
+            });
+        }
+
+        // 3. Pegar imagen con Ctrl+V directamente en el área de texto
+        const contentArea = document.getElementById('post-contenido');
+        if (contentArea) {
+            contentArea.addEventListener('paste', (e) => {
+                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                for (const item of items) {
+                    if (item.type.indexOf('image') !== -1) {
+                        const file = item.getAsFile();
+                        if (file) {
+                            this.processImageFile(file);
+                            if (window.clientSocket) {
+                                window.clientSocket.showToast('📸 Imagen adjuntada desde el portapapeles.', 'info');
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    processImageFile(file) {
+        if (!file.type.startsWith('image/')) {
+            alert('Por favor selecciona un archivo de imagen válido (PNG, JPG, WebP).');
+            return;
+        }
+
+        if (file.size > 15 * 1024 * 1024) {
+            alert('La imagen no debe superar los 15MB.');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const rawBase64 = e.target.result;
+            // Optimizar tamaño si es mayor a 1MB usando un Canvas invisible
+            if (file.size > 1024 * 1024) {
+                this.compressImage(rawBase64, (compressed) => {
+                    this.setImagePreview(compressed);
+                });
+            } else {
+                this.setImagePreview(rawBase64);
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+
+    compressImage(base64Str, callback) {
+        const img = new Image();
+        img.src = base64Str;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const maxDimension = 1600;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+                if (width > maxDimension) {
+                    height = Math.round((height * maxDimension) / width);
+                    width = maxDimension;
+                }
+            } else {
+                if (height > maxDimension) {
+                    width = Math.round((width * maxDimension) / height);
+                    height = maxDimension;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.88);
+            callback(compressedBase64);
+        };
+        img.onerror = () => callback(base64Str);
+    }
+
+    setImagePreview(base64Data) {
+        this.currentImageBase64 = base64Data;
+        const previewWrap = document.getElementById('post-image-preview-wrapper');
+        const previewImg = document.getElementById('post-image-preview');
+
+        if (previewWrap && previewImg) {
+            previewImg.src = base64Data;
+            previewWrap.classList.remove('hidden');
+        }
+    }
+
+    clearImage() {
+        this.currentImageBase64 = null;
+        const previewWrap = document.getElementById('post-image-preview-wrapper');
+        const previewImg = document.getElementById('post-image-preview');
+        const fileInput = document.getElementById('post-imagen-input');
+
+        if (previewWrap) previewWrap.classList.add('hidden');
+        if (previewImg) previewImg.src = '';
+        if (fileInput) fileInput.value = '';
     }
 
     async loadFeed() {
@@ -59,7 +200,12 @@ class FeedModule {
             card.className = 'glass-card feed-card';
             card.id = `feed-post-${post.id}`;
 
-            const initials = post.autor_nombre.split(' ').map(n => n[0]).join('').substring(0, 2);
+            const initials = post.autor_nombre ? post.autor_nombre.split(' ').map(n => n[0]).join('').substring(0, 2) : 'RD';
+
+            // Determinar color de badge por rol o categoría
+            let catColor = 'badge-sr';
+            if (post.categoria === 'Urgente') catColor = 'badge-admin';
+            else if (post.categoria === 'Aviso Legal') catColor = 'badge-rh';
 
             card.innerHTML = `
                 <div class="post-author-bar">
@@ -68,11 +214,17 @@ class FeedModule {
                         <span class="post-author-name">${post.autor_nombre}</span>
                         <span class="post-time">${post.autor_rol} • ${new Date(post.fecha_creacion).toLocaleDateString('es-MX', { hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
-                    <span class="role-badge badge-sr" style="margin-left: auto;">${post.categoria}</span>
+                    <span class="role-badge ${catColor}" style="margin-left: auto;">${post.categoria}</span>
                 </div>
                 
                 ${post.titulo ? `<h3 class="post-title">${post.titulo}</h3>` : ''}
                 <p class="post-body">${post.contenido}</p>
+
+                ${post.imagen_url ? `
+                    <div class="post-image-container" onclick="feedMod.openLightbox('${post.imagen_url}')" title="Haz clic para ampliar la imagen">
+                        <img src="${post.imagen_url}" alt="${post.titulo || 'Comunicado RDL'}" class="post-feed-image" loading="lazy">
+                    </div>
+                ` : ''}
 
                 <div class="post-interactions">
                     <button class="btn-like" onclick="feedMod.darLike(${post.id})">
@@ -88,11 +240,20 @@ class FeedModule {
         if (typeof gsap !== 'undefined') {
             gsap.from('.feed-card', {
                 opacity: 0,
-                y: 20,
-                stagger: 0.08,
-                duration: 0.45,
+                y: 15,
+                stagger: 0.06,
+                duration: 0.35,
                 ease: 'power2.out'
             });
+        }
+    }
+
+    openLightbox(imgSrc) {
+        const lightboxModal = document.getElementById('modal-image-lightbox');
+        const lightboxImg = document.getElementById('lightbox-full-image');
+        if (lightboxModal && lightboxImg) {
+            lightboxImg.src = imgSrc;
+            lightboxModal.classList.add('active');
         }
     }
 
@@ -100,26 +261,34 @@ class FeedModule {
         const user = window.currentUser;
         if (!user) return;
 
-        // Validar permisos en frontend
-        if (user.rol !== 'ADMIN' && user.rol !== 'ABOGADA_SR') {
-            alert('Solo Administradores y Abogadas SR pueden publicar en el Muro.');
+        // Validar permisos en frontend (Permitir RH, ADMIN_RH, ADMIN y ABOGADA_SR)
+        const isAuthorized = user.rol === 'ADMIN' || user.rol === 'ABOGADA_SR' || user.rol === 'RH' || user.rol === 'ADMIN_RH';
+        if (!isAuthorized) {
+            alert('Solo Recursos Humanos (RH), Dirección y Abogadas SR pueden publicar en el Muro.');
             return;
         }
 
-        const titulo = document.getElementById('post-titulo').value;
-        const contenido = document.getElementById('post-contenido').value;
+        const titulo = document.getElementById('post-titulo').value.trim();
+        const contenido = document.getElementById('post-contenido').value.trim();
         const categoria = document.getElementById('post-categoria').value;
 
         if (!contenido) return;
+
+        const submitBtn = document.getElementById('btn-submit-post');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Publicando...';
+        }
 
         const payload = {
             autor_id: user.id,
             autor_nombre: user.nombre,
             autor_rol: user.rol,
-            autor_avatar: user.avatar,
+            autor_avatar: user.avatar || user.nombre.substring(0, 2).toUpperCase(),
             titulo,
             contenido,
-            categoria
+            categoria,
+            imagen_url: this.currentImageBase64 || null
         };
 
         try {
@@ -131,9 +300,21 @@ class FeedModule {
             const data = await res.json();
             if (data.success) {
                 document.getElementById('form-create-post').reset();
+                this.clearImage();
+                if (window.clientSocket) {
+                    window.clientSocket.showToast('📢 Comunicado publicado exitosamente en el muro.', 'success');
+                }
+            } else {
+                alert(data.error || 'Error al publicar el comunicado.');
             }
         } catch (err) {
             console.error('Error al publicar post:', err);
+            alert('Error de conexión al publicar el comunicado.');
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Publicar en el Muro RDL';
+            }
         }
     }
 

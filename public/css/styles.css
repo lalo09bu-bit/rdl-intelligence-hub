@@ -1242,3 +1242,53 @@ body.rdl-theme {
 .toast-item.toast-info { border-left-color: var(--rdl-navy); border-color: #cbd5e1; }
 
 .hidden { display: none !important; }
+
+/* COMUNICADOS / FEED CON IMÁGENES */
+.post-image-container {
+    margin-top: 14px;
+    margin-bottom: 12px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--border-light);
+    background: #f8fafc;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.post-image-container:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.post-feed-image {
+    width: 100%;
+    max-height: 480px;
+    object-fit: cover;
+    display: block;
+}
+
+.post-composer.drag-active {
+    border: 2px dashed var(--rdl-teal) !important;
+    background: rgba(19, 106, 96, 0.04) !important;
+}
+
+#btn-trigger-post-image {
+    border: 1px solid var(--border-light);
+    background: var(--bg-alt);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+#btn-trigger-post-image:hover {
+    background: #ffffff;
+    border-color: var(--rdl-teal);
+    color: var(--rdl-teal);
+}

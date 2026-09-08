@@ -353,23 +353,23 @@ app.get('/api/feed', (req, res) => {
 });
 
 app.post('/api/feed', (req, res) => {
-    const { autor_id, autor_nombre, autor_rol, autor_avatar, titulo, contenido, categoria } = req.body;
+    const { autor_id, autor_nombre, autor_rol, autor_avatar, titulo, contenido, categoria, imagen_url } = req.body;
 
     if (autor_rol !== 'ADMIN' && autor_rol !== 'ABOGADA_SR' && autor_rol !== 'RH' && autor_rol !== 'ADMIN_RH') {
         return res.status(403).json({ error: 'Permisos insuficientes. Solo Administradores, Abogadas SR y Recursos Humanos pueden publicar.' });
     }
 
     const stmt = db.prepare(`
-        INSERT INTO feed_publicaciones (autor_id, autor_nombre, autor_rol, autor_avatar, titulo, contenido, categoria)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO feed_publicaciones (autor_id, autor_nombre, autor_rol, autor_avatar, titulo, contenido, categoria, imagen_url)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
-    stmt.run([autor_id, autor_nombre, autor_rol, autor_avatar || 'RDL', titulo || '', contenido, categoria || 'Corporativo'], function (err) {
+    stmt.run([autor_id, autor_nombre, autor_rol, autor_avatar || 'RDL', titulo || '', contenido, categoria || 'Corporativo', imagen_url || null], function (err) {
         if (err) return res.status(500).json({ error: err.message });
 
         const nuevoPost = {
             id: this.lastID,
-            autor_id, autor_nombre, autor_rol, autor_avatar, titulo, contenido, categoria,
+            autor_id, autor_nombre, autor_rol, autor_avatar, titulo, contenido, categoria, imagen_url: imagen_url || null,
             likes_count: 0, comentarios_count: 0, fecha_creacion: new Date().toISOString()
         };
 
