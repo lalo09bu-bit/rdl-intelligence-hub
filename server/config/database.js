@@ -6,16 +6,29 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const dbPath = path.join(__dirname, '..', '..', 'rdl_intelligence_hub.db');
+const defaultDbPath = path.join(__dirname, '..', '..', 'rdl_intelligence_hub.db');
+const dbPath = process.env.DATABASE_PATH || defaultDbPath;
+
+// Crear directorio contenedor automáticamente si se usa un disco persistente (ej: /var/data/rdl.db)
+const dbDir = path.dirname(dbPath);
+if (!fs.existsSync(dbDir)) {
+    try {
+        fs.mkdirSync(dbDir, { recursive: true });
+        console.log(`📁 Directorio para base de datos creado: ${dbDir}`);
+    } catch (dirErr) {
+        console.warn(`Aviso al crear directorio para SQLite: ${dirErr.message}`);
+    }
+}
+
 const schemaPath = path.join(__dirname, '..', 'db', 'schema.sql');
 
 const sqlite = sqlite3.verbose();
 
 const db = new sqlite.Database(dbPath, (err) => {
     if (err) {
-        console.error('❌ Error al conectar con SQLite RDL Hub:', err.message);
+        console.error(`❌ Error al conectar con SQLite (${dbPath}):`, err.message);
     } else {
-        console.log('✅ Conexión a SQLite establecida (rdl_intelligence_hub.db)');
+        console.log(`✅ Conexión a SQLite establecida en: ${dbPath}`);
         db.run('PRAGMA journal_mode = WAL;', (pErr) => {
             if (pErr) console.warn('Aviso PRAGMA journal_mode:', pErr.message);
         });
