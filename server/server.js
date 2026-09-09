@@ -18,6 +18,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 9060;
 
+// Soporte para Render y balanceadores de carga / proxies HTTPS
+app.set('trust proxy', 1);
+
 app.use(cookieParser());
 app.use(cors({
     origin: true,
@@ -602,9 +605,11 @@ app.put('/api/incidencias/:id/aprobar', (req, res) => {
 
 // Ruta para la pantalla de inicio de sesión
 app.get('/login', (req, res) => {
-    // Si ya tiene sesión activa válida, redirigir al Hub
+    // Si ya tiene sesión activa válida y no es una solicitud de cambio/error, redirigir al Hub
     const token = req.cookies && req.cookies.rdl_session;
-    if (token && verificarJwt(token)) {
+    const hasOverride = req.query.error || req.query.force === 'true';
+
+    if (token && !hasOverride && verificarJwt(token)) {
         return res.redirect('/');
     }
 
@@ -616,7 +621,19 @@ app.get('/login', (req, res) => {
     if (fs.existsSync(fallbackLogin)) {
         return res.sendFile(fallbackLogin);
     }
-    return res.sendFile(path.join(distPath, 'index.html'));
+
+    // NUNCA enviar index.html aquí porque requiere sesión y crearía un bucle
+    return res.status(503).send(`
+        <!DOCTYPE html>
+        <html lang="es">
+        <head><meta charset="UTF-8"><title>RDL Intelligence Hub - Inicializando</title></head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px; background: #0f2d4a; color: #ffffff;">
+            <h2>RDL Intelligence Hub</h2>
+            <p>La pantalla de inicio de sesión se está compilando o no se encuentra en el servidor.</p>
+            <p style="color: #94a3b8; font-size: 14px;">Ejecute <code>npm run build</code> en el servidor para generar los archivos estáticos.</p>
+        </body>
+        </html>
+    `);
 });
 
 // Protección de la ruta principal y SPA Fallback para Astro dist
@@ -634,7 +651,22 @@ app.get('*', (req, res) => {
         return res.redirect('/login');
     }
 
-    res.sendFile(path.join(distPath, 'index.html'));
+    const indexPath = path.join(distPath, 'index.html');
+    if (fs.existsSync(indexPath)) {
+        return res.sendFile(indexPath);
+    }
+
+    return res.status(503).send(`
+        <!DOCTYPE html>
+        <html lang="es">
+        <head><meta charset="UTF-8"><title>RDL Intelligence Hub - Inicializando</title></head>
+        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; text-align: center; padding: 60px 20px; background: #0f2d4a; color: #ffffff;">
+            <h2>RDL Intelligence Hub</h2>
+            <p>La aplicación se está inicializando.</p>
+            <p style="color: #94a3b8; font-size: 14px;">Ejecute <code>npm run build</code> en el servidor para generar los archivos estáticos.</p>
+        </body>
+        </html>
+    `);
 });
 
 // Socket.io

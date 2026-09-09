@@ -28,8 +28,12 @@ export function verificarSesion(req, res, next) {
     const decoded = verificarJwt(token);
 
     if (!decoded) {
-        // Limpiar cookie corrupta o expirada
-        res.clearCookie('rdl_session');
+        // Limpiar cookie corrupta o expirada con las mismas opciones que la creación
+        res.clearCookie('rdl_session', {
+            httpOnly: true,
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production'
+        });
 
         if (req.originalUrl.startsWith('/api/') || (req.headers.accept && req.headers.accept.includes('application/json'))) {
             return res.status(401).json({

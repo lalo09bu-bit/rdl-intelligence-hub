@@ -7,6 +7,7 @@
     "dev": "astro dev",
     "start": "node server/server.js",
     "build": "astro build",
+    "postinstall": "astro build",
     "seed": "node server/scripts/seed-mock-data.js",
     "preview": "astro preview",
     "neu:start": "neu run",

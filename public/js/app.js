@@ -76,9 +76,15 @@ class LoginModule {
 
     /**
      * Verifica que el usuario tenga una sesión HTTP-Only activa válida con JWT.
-     * Si no la tiene, lo redirige inmediatamente a /login.
+     * Si no la tiene, lo redirige a /login.
      */
     async verificarSesionActiva() {
+        // Si ya estamos en la pantalla de login, no ejecutar verificación para evitar rebotes
+        if (window.location.pathname === '/login' || window.location.pathname === '/login.html') {
+            return;
+        }
+
+        let sessionUser = null;
         try {
             const res = await fetch('/api/auth/me', {
                 headers: { 'Accept': 'application/json' }
@@ -87,18 +93,29 @@ class LoginModule {
             if (res.ok) {
                 const data = await res.json();
                 if (data.success && data.user) {
-                    window.currentUser = data.user;
-                    this.onLoginSuccess(data.user);
-                    return;
+                    sessionUser = data.user;
                 }
             }
+        } catch (netErr) {
+            console.warn('Aviso de conexión al verificar sesión:', netErr);
+            // No redirigir ante un fallo de red momentáneo
+            return;
+        }
 
-            // Si no hay sesión válida, redirigir a /login
+        if (!sessionUser) {
+            // Si el servidor confirma que no hay sesión activa
             console.warn('⚠️ Sesión no detectada o expirada. Redirigiendo a pantalla de acceso institucional...');
-            window.location.href = '/login';
-        } catch (err) {
-            console.error('Error al verificar sesión activa:', err);
-            window.location.href = '/login';
+            window.location.replace('/login');
+            return;
+        }
+
+        // Sesión confirmada por el servidor: inicializar la interfaz de forma aislada
+        window.currentUser = sessionUser;
+        try {
+            this.onLoginSuccess(sessionUser);
+        } catch (uiErr) {
+            console.error('Error al inicializar interfaz del usuario:', uiErr);
+            // IMPORTANTE: Un error de renderizado visual JAMÁS debe redirigir a /login
         }
     }
 
@@ -115,24 +132,32 @@ class LoginModule {
     }
 
     onLoginSuccess(user) {
-        // Ocultar modal de login
-        document.getElementById('login-modal').classList.remove('active');
+        if (!user) return;
+
+        // Ocultar modal de login si existiera
+        const loginModal = document.getElementById('login-modal');
+        if (loginModal) {
+            loginModal.classList.remove('active');
+        }
 
         // Mostrar Plataforma Principal con animación GSAP
         const mainApp = document.getElementById('main-app-layout');
-        mainApp.classList.remove('hidden');
+        if (mainApp) {
+            mainApp.classList.remove('hidden');
 
-        if (typeof gsap !== 'undefined') {
-            gsap.fromTo(mainApp,
-                { opacity: 0, scale: 0.98 },
-                { opacity: 1, scale: 1, duration: 0.5, ease: 'power2.out' }
-            );
+            if (typeof gsap !== 'undefined') {
+                gsap.fromTo(mainApp,
+                    { opacity: 0, scale: 0.98 },
+                    { opacity: 1, scale: 1, duration: 0.5, ease: 'power2.out' }
+                );
+            }
         }
 
         // Actualizar Header
-        document.getElementById('current-user-name').textContent = user.nombre;
+        const userNameEl = document.getElementById('current-user-name');
+        if (userNameEl) userNameEl.textContent = user.nombre || 'Colaborador';
         const roleBadge = document.getElementById('current-user-role-badge');
-        roleBadge.textContent = user.puesto;
+        if (roleBadge) roleBadge.textContent = user.puesto || user.rol || 'Corporativo';
 
         // Renderizar Ficha del Empleado & Metas (Panel Izquierdo)
         if (window.empleadoMod) {
@@ -165,21 +190,33 @@ class LoginModule {
         const jrNotice = document.getElementById('jr-notice-card');
         const avatarSm = document.getElementById('composer-user-avatar');
 
-        const initials = user.nombre.split(' ').map(n => n[0]).join('').substring(0, 2);
-        if (avatarSm) avatarSm.textContent = initials;
-
-        if (isManager) {
-            if (composerCard) composerCard.classList.remove('hidden');
-            if (jrNotice) jrNotice.classList.add('hidden');
-        } else {
-            if (composerCard) composerCard.classList.add('hidden');
-            if (jrNotice) jrNotice.classList.remove('hidden');
+        if (user.nombre) {
+            const initials = user.nombre.split(' ').map(n => n[0]).join('').substring(0, 2);
+            if (avatarSm) avatarSm.textContent = initials;
         }
 
-        // Registrar usuario en Socket.io
+        if (user.rol === 'ABOGADA_JR') {
+            if (composerCard) composerCard.classList.add('hidden');
+            if (jrNotice) jrNotice.classList.remove('hidden');
+        } else {
+            if (composerCard) composerCard.classList.remove('hidden');
+            if (jrNotice) jrNotice.classList.add('hidden');
+        }
+
+        // Botón Directorio & Fichas Buk visible para RH y Admin
+        const navDirectorio = document.getElementById('btn-nav-directorio');
+        if (navDirectorio) {
+            if (user.rol === 'RH' || user.rol === 'ADMIN') {
+                navDirectorio.style.display = 'inline-flex';
+            } else {
+                navDirectorio.style.display = 'none';
+            }
+        }
+
+        // Conectar al socket con la sala del usuario
         if (window.clientSocket && window.clientSocket.socket) {
             window.clientSocket.socket.emit('join_room', user);
-            window.clientSocket.showToast(`Bienvenida, ${user.nombre} (${user.rol})`, 'success');
+            window.clientSocket.showToast(`Bienvenida/o, ${user.nombre} (${user.rol})`, 'success');
         }
     }
 
@@ -190,7 +227,7 @@ class LoginModule {
         } catch (e) {
             console.warn('Aviso al cerrar sesión:', e);
         }
-        window.location.href = '/login';
+        window.location.replace('/login');
     }
 }
 
