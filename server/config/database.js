@@ -1,4 +1,5 @@
 import sqlite3 from 'sqlite3';
+import { createClient } from '@libsql/client';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -6,38 +7,174 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const defaultDbPath = path.join(__dirname, '..', '..', 'rdl_intelligence_hub.db');
-const dbPath = process.env.DATABASE_PATH || defaultDbPath;
+const schemaPath = path.join(__dirname, '..', 'db', 'schema.sql');
+const backupPath = path.join(__dirname, '..', 'db', 'backup_data.json');
 
-// Crear directorio contenedor automáticamente si se usa un disco persistente (ej: /var/data/rdl.db)
-const dbDir = path.dirname(dbPath);
-if (!fs.existsSync(dbDir)) {
-    try {
-        fs.mkdirSync(dbDir, { recursive: true });
-        console.log(`📁 Directorio para base de datos creado: ${dbDir}`);
-    } catch (dirErr) {
-        console.warn(`Aviso al crear directorio para SQLite: ${dirErr.message}`);
+// Normalizar registros para que BigInt se convierta a Number (evita errores en JSON.stringify de Express)
+function normalizeRow(row) {
+    if (!row || typeof row !== 'object') return row;
+    const clean = {};
+    for (const [key, value] of Object.entries(row)) {
+        clean[key] = typeof value === 'bigint' ? Number(value) : value;
+    }
+    return clean;
+}
+
+// Adaptador universal para Turso (LibSQL en la Nube) que emula la interfaz callback de sqlite3
+class TursoAdapter {
+    constructor(client) {
+        this.client = client;
+    }
+
+    all(sql, params, callback) {
+        if (typeof params === 'function') {
+            callback = params;
+            params = [];
+        }
+        params = Array.isArray(params) ? params : (params ? [params] : []);
+        this.client.execute({ sql, args: params })
+            .then(res => {
+                const rows = (res.rows || []).map(r => normalizeRow(r));
+                if (callback) callback(null, rows);
+            })
+            .catch(err => {
+                console.error('❌ Error en consulta Turso (all):', err.message, 'SQL:', sql);
+                if (callback) callback(err);
+            });
+    }
+
+    get(sql, params, callback) {
+        if (typeof params === 'function') {
+            callback = params;
+            params = [];
+        }
+        params = Array.isArray(params) ? params : (params ? [params] : []);
+        this.client.execute({ sql, args: params })
+            .then(res => {
+                const row = res.rows && res.rows.length > 0 ? normalizeRow(res.rows[0]) : undefined;
+                if (callback) callback(null, row);
+            })
+            .catch(err => {
+                console.error('❌ Error en consulta Turso (get):', err.message, 'SQL:', sql);
+                if (callback) callback(err);
+            });
+    }
+
+    run(sql, params, callback) {
+        if (typeof params === 'function') {
+            callback = params;
+            params = [];
+        }
+        params = Array.isArray(params) ? params : (params ? [params] : []);
+
+        const cleanSql = (sql || '').trim().toUpperCase();
+        // Ignorar sentencias transaccionales aisladas en protocolo stateless HTTP
+        if (cleanSql === 'BEGIN' || cleanSql === 'BEGIN IMMEDIATE TRANSACTION' || cleanSql === 'BEGIN TRANSACTION' || cleanSql === 'COMMIT' || cleanSql === 'ROLLBACK') {
+            if (callback) callback.call({ lastID: 0, changes: 0 }, null);
+            return;
+        }
+
+        this.client.execute({ sql, args: params })
+            .then(res => {
+                const context = {
+                    lastID: res.lastInsertRowid !== undefined && res.lastInsertRowid !== null ? Number(res.lastInsertRowid) : 0,
+                    changes: res.rowsAffected || 0
+                };
+                if (callback) callback.call(context, null);
+            })
+            .catch(err => {
+                console.error('❌ Error en consulta Turso (run):', err.message, 'SQL:', sql);
+                if (callback) callback.call({ lastID: 0, changes: 0 }, err);
+            });
+    }
+
+    exec(sql, callback) {
+        this.client.executeMultiple(sql)
+            .then(() => {
+                if (callback) callback(null);
+            })
+            .catch(err => {
+                console.error('❌ Error en executeMultiple Turso:', err.message);
+                if (callback) callback(err);
+            });
+    }
+
+    prepare(sql) {
+        const self = this;
+        return {
+            run(...args) {
+                let callback;
+                let params = [];
+                if (args.length > 0 && typeof args[args.length - 1] === 'function') {
+                    callback = args.pop();
+                }
+                if (args.length === 1 && Array.isArray(args[0])) {
+                    params = args[0];
+                } else {
+                    params = args;
+                }
+                self.run(sql, params, callback);
+            },
+            finalize(callback) {
+                if (callback) callback(null);
+            }
+        };
+    }
+
+    serialize(callback) {
+        if (callback) callback();
     }
 }
 
-const schemaPath = path.join(__dirname, '..', 'db', 'schema.sql');
+// Detección del Entorno: Turso Cloud vs SQLite Local
+const isTurso = !!(process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN);
+let db;
 
-const sqlite = sqlite3.verbose();
+if (isTurso) {
+    console.log(`
+╔══════════════════════════════════════════════════════════════════════════════╗
+║  ⚡ CONEXIÓN A BASE DE DATOS EN LA NUBE TURSO (LIBSQL SERVERLESS)             ║
+╠══════════════════════════════════════════════════════════════════════════════╣
+║  🌐 URL:    ${process.env.TURSO_DATABASE_URL.substring(0, 45)}...            
+║  🛡️ Auth:   Token activo (Persistencia 100% en la Nube / Render Free)       ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+    `);
+    const client = createClient({
+        url: process.env.TURSO_DATABASE_URL,
+        authToken: process.env.TURSO_AUTH_TOKEN
+    });
+    db = new TursoAdapter(client);
+    initDatabase();
+} else {
+    const defaultDbPath = path.join(__dirname, '..', '..', 'rdl_intelligence_hub.db');
+    const dbPath = process.env.DATABASE_PATH || defaultDbPath;
 
-const db = new sqlite.Database(dbPath, (err) => {
-    if (err) {
-        console.error(`❌ Error al conectar con SQLite (${dbPath}):`, err.message);
-    } else {
-        console.log(`✅ Conexión a SQLite establecida en: ${dbPath}`);
-        db.run('PRAGMA journal_mode = WAL;', (pErr) => {
-            if (pErr) console.warn('Aviso PRAGMA journal_mode:', pErr.message);
-        });
-        db.run('PRAGMA foreign_keys = ON;', (fErr) => {
-            if (fErr) console.warn('Aviso PRAGMA foreign_keys:', fErr.message);
-        });
-        initDatabase();
+    const dbDir = path.dirname(dbPath);
+    if (!fs.existsSync(dbDir)) {
+        try {
+            fs.mkdirSync(dbDir, { recursive: true });
+            console.log(`📁 Directorio para base de datos creado: ${dbDir}`);
+        } catch (dirErr) {
+            console.warn(`Aviso al crear directorio para SQLite: ${dirErr.message}`);
+        }
     }
-});
+
+    const sqlite = sqlite3.verbose();
+    db = new sqlite.Database(dbPath, (err) => {
+        if (err) {
+            console.error(`❌ Error al conectar con SQLite (${dbPath}):`, err.message);
+        } else {
+            console.log(`✅ Conexión a SQLite establecida en: ${dbPath}`);
+            db.run('PRAGMA journal_mode = WAL;', (pErr) => {
+                if (pErr) console.warn('Aviso PRAGMA journal_mode:', pErr.message);
+            });
+            db.run('PRAGMA foreign_keys = ON;', (fErr) => {
+                if (fErr) console.warn('Aviso PRAGMA foreign_keys:', fErr.message);
+            });
+            initDatabase();
+        }
+    });
+}
 
 function initDatabase() {
     if (fs.existsSync(schemaPath)) {
@@ -120,7 +257,7 @@ function runMigrations() {
                 if (!err && !rhUser) {
                     console.log("🌱 Creando perfil de Dirección de Recursos Humanos (RH)...");
                     db.run(`
-                        INSERT INTO usuarios (email, nombre, rol, puesto, departamento, avatar, telefono, fecha_ingreso, tipo_contrato, numero_empleado, dias_vacaciones_totales, dias_vacaciones_tomados)
+                        INSERT OR IGNORE INTO usuarios (email, nombre, rol, puesto, departamento, avatar, telefono, fecha_ingreso, tipo_contrato, numero_empleado, dias_vacaciones_totales, dias_vacaciones_tomados)
                         VALUES ('rh@rdl.com.mx', 'Lic. Andrés Cosmes', 'RH', 'Dirección de Recursos Humanos & Talento', 'Recursos Humanos', 'AC', '+52 (55) 5482-9000', '2023-01-01', 'Tiempo Indeterminado', 'RDL-RH01', 25, 0)
                     `, function(err) {
                         if (!err) {
